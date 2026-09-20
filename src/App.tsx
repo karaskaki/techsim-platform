@@ -551,6 +551,11 @@ export default function App() {
             <AppShell><LLDWorkspace /></AppShell>
           </ProtectedRoute>
         } />
+        <Route path="/lld/practice/:slug" element={
+          <ProtectedRoute>
+            <AppShell><LLDWorkspace /></AppShell>
+          </ProtectedRoute>
+        } />
         <Route path="/security" element={
           <ProtectedRoute>
             <AppShell><SecurityView /></AppShell>

@@ -247,4 +247,110 @@ export const feedbackApi = {
   },
 };
 
+// ── LLD Suite ───────────────────────────────────────────────────────────────
+export interface LLDProblem {
+  _id: string;
+  title: string;
+  slug: string;
+  description: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  patternTags: string[];
+  starterCode: {
+    python: string;
+    java: string;
+    cpp: string;
+    javascript: string;
+  };
+  externalLinks: Array<{ label: string; url: string }>;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface LLDSubmission {
+  _id: string;
+  userId: string;
+  problemId: string;
+  language: 'python' | 'java' | 'cpp' | 'javascript';
+  code: string;
+  status: 'draft' | 'submitted' | 'passed' | 'failed';
+  aiReview?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface LLDExecuteResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  output: string;
+  runtime: number;
+}
+
+export interface LLDProgress {
+  _id: string;
+  userId: string;
+  completedProblems: Array<{
+    _id: string;
+    title: string;
+    slug: string;
+    difficulty: string;
+    patternTags: string[];
+  }>;
+  currentRoadmapStep: number;
+  solidPrincipleQuizScores: Record<string, number>;
+}
+
+export const lldApi = {
+  getProblems: async (params?: { pattern?: string; difficulty?: string; search?: string }) => {
+    const res = await apiClient.get<{ count: number; problems: LLDProblem[] }>('/api/lld/problems', { params });
+    return res.data;
+  },
+
+  getProblem: async (slug: string) => {
+    const res = await apiClient.get<LLDProblem>(`/api/lld/problems/${slug}`);
+    return res.data;
+  },
+
+  saveSubmission: async (data: {
+    problemId: string;
+    language: string;
+    code: string;
+    status?: 'draft' | 'submitted' | 'passed' | 'failed';
+  }) => {
+    const res = await apiClient.post<LLDSubmission>('/api/lld/submissions', data);
+    return res.data;
+  },
+
+  executeCode: async (data: { language: string; code: string; stdin?: string }) => {
+    const res = await apiClient.post<LLDExecuteResult>('/api/lld/execute', data);
+    return res.data;
+  },
+
+  getAiReview: async (data: {
+    problemTitle?: string;
+    problemDescription?: string;
+    language: string;
+    code: string;
+    submissionId?: string;
+  }) => {
+    const res = await apiClient.post<{ review: string }>('/api/lld/ai-review', data);
+    return res.data;
+  },
+
+  getProgress: async () => {
+    const res = await apiClient.get<LLDProgress>('/api/lld/progress');
+    return res.data;
+  },
+
+  updateProgress: async (data: {
+    completedProblemId?: string;
+    currentRoadmapStep?: number;
+    solidPrincipleQuizScore?: { principle: string; score: number };
+  }) => {
+    const res = await apiClient.post<LLDProgress>('/api/lld/progress', data);
+    return res.data;
+  },
+};
+
 export default apiClient;
+
