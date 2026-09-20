@@ -5,8 +5,8 @@ import type { User } from '../types';
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  register: (username: string, email: string, password: string) => Promise<User>;
   logout: () => void;
   updateUser: (u: User) => void;
 }
@@ -27,16 +27,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<User> => {
     const { token, user: u } = await authApi.login(email, password);
     setToken(token);
-    setUser(normalise(u));
+    const normalized = normalise(u);
+    setUser(normalized);
+    return normalized;
   }, []);
 
-  const register = useCallback(async (username: string, email: string, password: string) => {
+  const register = useCallback(async (username: string, email: string, password: string): Promise<User> => {
     const { token, user: u } = await authApi.register(username, email, password);
     setToken(token);
-    setUser(normalise(u));
+    const normalized = normalise(u);
+    setUser(normalized);
+    return normalized;
   }, []);
 
   const logout = useCallback(() => {
@@ -64,11 +68,12 @@ export function useAuth(): AuthContextValue {
 // Server can return _id (from /me Mongoose doc) or id (from login/register)
 function normalise(u: Record<string, unknown>): User {
   return {
-    _id:      (u._id ?? u.id ?? '') as string,
-    id:       (u.id  ?? u._id ?? '') as string,
-    username: u.username as string,
-    email:    u.email as string,
-    avatarUrl: u.avatarUrl as string | undefined,
-    plan:      u.plan as string | undefined,
+    _id:            (u._id ?? u.id ?? '') as string,
+    id:             (u.id  ?? u._id ?? '') as string,
+    username:       u.username as string,
+    email:          u.email as string,
+    avatarUrl:      u.avatarUrl as string | undefined,
+    plan:           u.plan as string | undefined,
+    preferredTrack: (u.preferredTrack as 'HLD' | 'LLD' | null | undefined) ?? null,
   };
 }

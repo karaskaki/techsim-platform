@@ -49,6 +49,7 @@ router.post('/register', async (req, res, next) => {
                 email: user.email,
                 avatarUrl: user.avatarUrl,
                 plan: user.plan,
+                preferredTrack: user.preferredTrack,
                 createdAt: user.createdAt
             }
         });
@@ -91,6 +92,7 @@ router.post('/login', async (req, res, next) => {
                 email: user.email,
                 avatarUrl: user.avatarUrl,
                 plan: user.plan,
+                preferredTrack: user.preferredTrack,
                 createdAt: user.createdAt
             }
         });
@@ -138,6 +140,7 @@ router.put('/profile', auth_1.authMiddleware, async (req, res, next) => {
             email: user.email,
             avatarUrl: user.avatarUrl,
             plan: user.plan,
+            preferredTrack: user.preferredTrack,
             createdAt: user.createdAt
         });
     }

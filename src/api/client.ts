@@ -65,6 +65,7 @@ export type AuthUser = {
   email: string;
   avatarUrl?: string;
   plan?: string;
+  preferredTrack?: 'HLD' | 'LLD' | null;
 };
 
 // ── Auth ────────────────────────────────────────────────────────────────────
@@ -99,6 +100,15 @@ export const authApi = {
     return res.data;
   },
 };
+
+// ── User Preferences ────────────────────────────────────────────────────────
+export const userApi = {
+  updatePreferences: async (preferences: { preferredTrack?: 'HLD' | 'LLD' | null }) => {
+    const res = await apiClient.patch<AuthUser>('/api/user/preferences', preferences);
+    return res.data;
+  },
+};
+
 
 // ── Diagrams ─────────────────────────────────────────────────────────────────
 export type DiagramSummary = {

@@ -21,8 +21,18 @@ export function Login() {
     setLoading(true);
     setError(null);
     try {
-      await login(email, password);
-      navigate(from, { replace: true });
+      const loggedInUser = await login(email, password);
+      const targetTrack = loggedInUser.preferredTrack || (localStorage.getItem('lastTrack') as 'HLD' | 'LLD' | null);
+
+      if (from && from !== '/canvas') {
+        navigate(from, { replace: true });
+      } else if (targetTrack === 'LLD') {
+        navigate('/lld', { replace: true });
+      } else if (targetTrack === 'HLD') {
+        navigate('/canvas', { replace: true });
+      } else {
+        navigate('/track-select', { replace: true });
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {

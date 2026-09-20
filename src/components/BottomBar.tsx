@@ -480,14 +480,14 @@ export function BottomBar({
   isRunning, onToggle,
   metrics,
   issues, onIssuesClick,
-  selectedNodeId, selectedNodeTypeId, selectedNodeName, selectedEdgeId, selectedNodeSimState,
+  selectedNodeId: _selectedNodeId, selectedNodeTypeId: _selectedNodeTypeId, selectedNodeName: _selectedNodeName, selectedEdgeId, selectedNodeSimState: _selectedNodeSimState,
   chaosNodeId, chaosNodeTypeId, chaosNodeName, chaosNodeSimState, onChaosClose,
   injectChaos,
   speed, onSpeedChange,
   traffic, onTrafficChange,
   activeNodeCount, totalNodeCount,
   onScoreClick,
-  onDeselectNode,
+  onDeselectNode: _onDeselectNode,
 }: BottomBarProps) {
   const criticalCount = issues.filter(i => i.severity === 'critical' || i.severity === 'error').length;
   const warnCount    = issues.filter(i => i.severity === 'warning').length;

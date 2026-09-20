@@ -43,8 +43,16 @@ export function Register() {
     setLoading(true);
     setApiError(null);
     try {
-      await register(username, email, password);
-      navigate('/canvas', { replace: true });
+      const newUser = await register(username, email, password);
+      const targetTrack = newUser.preferredTrack || (localStorage.getItem('lastTrack') as 'HLD' | 'LLD' | null);
+
+      if (targetTrack === 'LLD') {
+        navigate('/lld', { replace: true });
+      } else if (targetTrack === 'HLD') {
+        navigate('/canvas', { replace: true });
+      } else {
+        navigate('/track-select', { replace: true });
+      }
     } catch (err) {
       setApiError((err as Error).message);
     } finally {

@@ -33,6 +33,8 @@ import { InterviewSession } from './pages/InterviewSession';
 import { ArchitectureScoreCard } from './components/ArchitectureScoreCard';
 import { RequirementWizard } from './components/wizard/RequirementWizard';
 import { ValidationGate } from './components/ValidationGate';
+import { TrackSelector } from './components/TrackSelector';
+import { LLDWorkspace } from './pages/LLDWorkspace';
 
 import { toPng } from 'html-to-image';
 import { diagramApi, aiApi } from './api/client';
@@ -538,8 +540,16 @@ export default function App() {
         <Route path="/register" element={<Register />} />
 
         {/* Protected */}
+        <Route path="/track-select" element={
+          <ProtectedRoute><TrackSelector /></ProtectedRoute>
+        } />
         <Route path="/canvas" element={
           <ProtectedRoute><CanvasPage /></ProtectedRoute>
+        } />
+        <Route path="/lld" element={
+          <ProtectedRoute>
+            <AppShell><LLDWorkspace /></AppShell>
+          </ProtectedRoute>
         } />
         <Route path="/security" element={
           <ProtectedRoute>

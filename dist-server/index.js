@@ -23,6 +23,7 @@ const ai_1 = __importDefault(require("./routes/ai"));
 const feedback_1 = __importDefault(require("./routes/feedback"));
 const knowledge_1 = __importDefault(require("./routes/knowledge"));
 const registry_1 = __importDefault(require("./routes/registry"));
+const user_1 = __importDefault(require("./routes/user"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // Security headers (add EARLY)
@@ -51,6 +52,7 @@ app.use(express_1.default.json());
 app.use(sanitize_1.sanitizeInput);
 // Mount routes under /api
 app.use('/api/auth', auth_1.default);
+app.use('/api/user', user_1.default);
 app.use('/api/diagrams', diagrams_1.default);
 app.use('/api/scenarios', scenarios_1.default);
 app.use('/api/progress', progress_1.default);

@@ -20,6 +20,7 @@ import aiRoutes from './routes/ai';
 import feedbackRoutes from './routes/feedback';
 import knowledgeRoutes from './routes/knowledge';
 import registryRoutes from './routes/registry';
+import userRoutes from './routes/user';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -57,6 +58,7 @@ app.use(sanitizeInput);
 
 // Mount routes under /api
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/diagrams', diagramRoutes);
 app.use('/api/scenarios', scenarioRoutes);
 app.use('/api/progress', progressRoutes);

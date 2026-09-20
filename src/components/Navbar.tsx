@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Bell, Save, LogOut, Loader2, CheckCircle, Play, Square } from 'lucide-react';
+import { Bell, Save, LogOut, Loader2, CheckCircle, Play, Square, Network, Code2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { userApi } from '../api/client';
 import { ThemeSwitcher } from './ThemeSwitcher';
-
-const TABS = [
-  { path: '/canvas',           label: 'Design' },
-  { path: '/my-architectures', label: 'My Work' },
-  { path: '/settings',         label: 'Settings' },
-];
 
 const LEARN_ITEMS = [
   { path: '/learn',      label: '📚 Learning Paths' },
@@ -23,7 +18,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ onSave, onSimulationStart, simulationRunning = false }: NavbarProps) {
-  const { user, logout } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
 
@@ -32,9 +27,37 @@ export function Navbar({ onSave, onSimulationStart, simulationRunning = false }:
   const [showUserMenu,  setShowUserMenu]  = useState(false);
   const [showLearnMenu, setShowLearnMenu] = useState(false);
 
+  const activeTrack: 'HLD' | 'LLD' = location.pathname.startsWith('/lld')
+    ? 'LLD'
+    : location.pathname.startsWith('/canvas')
+    ? 'HLD'
+    : (user?.preferredTrack as 'HLD' | 'LLD') || (localStorage.getItem('lastTrack') as 'HLD' | 'LLD') || 'HLD';
+
+  const tabs = [
+    { path: activeTrack === 'LLD' ? '/lld' : '/canvas', label: 'Design' },
+    { path: '/my-architectures', label: 'My Work' },
+    { path: '/settings',         label: 'Settings' },
+  ];
+
   const initials = user
     ? user.username.slice(0, 2).toUpperCase()
     : '?';
+
+  const handleSwitchTrack = async (targetTrack: 'HLD' | 'LLD') => {
+    localStorage.setItem('lastTrack', targetTrack);
+    if (user) {
+      updateUser({ ...user, preferredTrack: targetTrack });
+    }
+    userApi.updatePreferences({ preferredTrack: targetTrack }).catch(err => {
+      console.error('Failed to sync track preference:', err);
+    });
+
+    if (targetTrack === 'HLD') {
+      navigate('/canvas');
+    } else {
+      navigate('/lld');
+    }
+  };
 
   const handleSave = async () => {
     if (!onSave || saving) return;
@@ -70,9 +93,35 @@ export function Navbar({ onSave, onSimulationStart, simulationRunning = false }:
         <span style={styles.logoText}>SystemCraft</span>
       </button>
 
+      {/* Track Switcher Toggle */}
+      <div style={styles.trackToggleContainer} title="Switch active track between HLD and LLD">
+        <button
+          id="nav-track-hld"
+          onClick={() => handleSwitchTrack('HLD')}
+          style={{
+            ...styles.trackToggleBtn,
+            ...(activeTrack === 'HLD' ? styles.trackToggleActiveHLD : {}),
+          }}
+        >
+          <Network size={12} />
+          <span>HLD</span>
+        </button>
+        <button
+          id="nav-track-lld"
+          onClick={() => handleSwitchTrack('LLD')}
+          style={{
+            ...styles.trackToggleBtn,
+            ...(activeTrack === 'LLD' ? styles.trackToggleActiveLLD : {}),
+          }}
+        >
+          <Code2 size={12} />
+          <span>LLD</span>
+        </button>
+      </div>
+
       {/* Tabs */}
       <div style={styles.tabs}>
-        {TABS.map(tab => {
+        {tabs.map(tab => {
           const isActive = location.pathname === tab.path;
           return (
             <button
@@ -285,7 +334,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   logoBtn: {
     display: 'flex', alignItems: 'center', gap: 8,
-    marginRight: 32, background: 'none', border: 'none',
+    marginRight: 16, background: 'none', border: 'none',
     cursor: 'pointer', padding: 0,
   },
   logoIcon: {
@@ -296,6 +345,40 @@ const styles: Record<string, React.CSSProperties> = {
   logoText: {
     fontSize: 15, fontWeight: 700, color: 'var(--text)',
     letterSpacing: '-0.02em', fontFamily: "'DM Sans', sans-serif",
+  },
+  trackToggleContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    background: 'rgba(0, 0, 0, 0.25)',
+    border: '1px solid var(--border)',
+    borderRadius: '20px',
+    padding: '2px',
+    marginRight: '20px',
+  },
+  trackToggleBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '3px 10px',
+    borderRadius: '16px',
+    border: 'none',
+    background: 'transparent',
+    color: 'var(--text-dim)',
+    fontSize: '11px',
+    fontWeight: 600,
+    fontFamily: "'IBM Plex Mono', monospace",
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  trackToggleActiveHLD: {
+    background: 'rgba(124, 58, 237, 0.25)',
+    color: '#C4B5FD',
+    boxShadow: '0 0 10px rgba(124, 58, 237, 0.3)',
+  },
+  trackToggleActiveLLD: {
+    background: 'rgba(6, 182, 212, 0.25)',
+    color: '#67E8F9',
+    boxShadow: '0 0 10px rgba(6, 182, 212, 0.3)',
   },
   tabs: { display: 'flex', alignItems: 'stretch', height: '100%', flex: 1 },
   tab: {

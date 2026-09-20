@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.connectToDatabase = connectToDatabase;
+exports.disconnectFromDatabase = disconnectFromDatabase;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const mongoose_1 = __importDefault(require("mongoose"));
@@ -123,3 +124,33 @@ async function seedDatabaseIfEmpty() {
         console.error('⚠️ Failed to auto-seed in-memory database:', err);
     }
 }
+async function disconnectFromDatabase() {
+    if (mongoose_1.default.connection.readyState !== 0) {
+        await mongoose_1.default.disconnect();
+    }
+    if (mongoServer) {
+        await mongoServer.stop();
+        mongoServer = null;
+    }
+    isConnected = false;
+}
+const handleShutdown = async () => {
+    try {
+        await disconnectFromDatabase();
+    }
+    catch (err) {
+        console.error('Error closing database connection:', err);
+    }
+    process.exit(0);
+};
+process.on('SIGINT', handleShutdown);
+process.on('SIGTERM', handleShutdown);
+process.once('SIGUSR2', async () => {
+    try {
+        await disconnectFromDatabase();
+    }
+    catch (err) {
+        console.error('Error closing database connection on reload:', err);
+    }
+    process.kill(process.pid, 'SIGUSR2');
+});

@@ -5,6 +5,7 @@ export interface User {
   email: string;
   avatarUrl?: string;
   plan?: string;
+  preferredTrack?: 'HLD' | 'LLD' | null;
 }
 
 export type EdgeProtocol = 'http' | 'database' | 'cache' | 'queue';

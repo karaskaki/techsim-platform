@@ -40,6 +40,7 @@ const UserSchema = new mongoose_1.Schema({
     password: { type: String, required: true },
     avatarUrl: { type: String, default: '' },
     plan: { type: String, enum: ['free', 'pro', 'team'], default: 'free' },
+    preferredTrack: { type: String, enum: ['HLD', 'LLD'], default: null },
     createdAt: { type: Date, default: Date.now }
 });
 exports.default = mongoose_1.default.model('User', UserSchema);

@@ -59,6 +59,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
         email: user.email,
         avatarUrl: user.avatarUrl,
         plan: user.plan,
+        preferredTrack: user.preferredTrack,
         createdAt: user.createdAt
       }
     });
@@ -112,6 +113,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
         email: user.email,
         avatarUrl: user.avatarUrl,
         plan: user.plan,
+        preferredTrack: user.preferredTrack,
         createdAt: user.createdAt
       }
     });
@@ -169,6 +171,7 @@ router.put('/profile', authMiddleware, async (req: AuthRequest, res: Response, n
       email: user.email,
       avatarUrl: user.avatarUrl,
       plan: user.plan,
+      preferredTrack: user.preferredTrack,
       createdAt: user.createdAt
     });
   } catch (error) {
