@@ -1,8 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { requirePlan, checkLimit } from '../middleware/planGuard';
-import { executionLimiter } from '../middleware/rateLimiter';
-import { callAI } from '../lib/ai';
+import { executionLimiter, aiLimiter } from '../middleware/rateLimiter';
+import { generateLLDProblem, reviewLLDSubmission } from '../lib/ai';
 import { executeCode } from '../lib/codeExecutor';
 import { LLDProblem, LLDSubmission, LLDProgress } from '../models/lldSubmission';
 
@@ -158,15 +158,50 @@ router.post('/execute', authMiddleware, requirePlan('free'), executionLimiter, a
   }
 });
 
-// ── 5. POST /api/lld/ai-review ──────────────────────────────────────────────
-// Evaluates LLD code with AI against SOLID principles, design patterns, and clean architecture
-router.post('/ai-review', authMiddleware, checkLimit('aiGenerationsPerDay'), async (req: AuthRequest, res: Response, next: NextFunction) => {
+// ── 5. POST /api/lld/ai-generate ────────────────────────────────────────────
+// Generates an LLD problem with requirements, starter code, and patterns using AI
+router.post('/ai-generate', authMiddleware, checkLimit('aiGenerationsPerDay'), aiLimiter, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { problemTitle, problemDescription, language, code, submissionId } = req.body;
+    const { topic, difficulty = 'medium', saveToDb = false } = req.body;
+
+    if (!topic || typeof topic !== 'string' || !topic.trim()) {
+      return res.status(400).json({ error: 'Topic is required to generate an LLD problem' });
+    }
+
+    const groqKey = req.headers['x-groq-api-key'] as string | undefined;
+    const geminiKey = req.headers['x-gemini-api-key'] as string | undefined;
+
+    const generatedProblem = await generateLLDProblem(topic.trim(), difficulty, groqKey, geminiKey);
+
+    if (saveToDb) {
+      const problem = await LLDProblem.findOneAndUpdate(
+        { slug: generatedProblem.slug },
+        generatedProblem,
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      return res.status(201).json({ problem });
+    }
+
+    return res.status(200).json({ problem: generatedProblem });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ── 6. POST /api/lld/ai-review ──────────────────────────────────────────────
+// Evaluates LLD code with AI against SOLID principles, design patterns, and clean architecture
+// Supports real-time streaming SSE when stream=true or Accept: text/event-stream
+router.post('/ai-review', authMiddleware, checkLimit('aiGenerationsPerDay'), aiLimiter, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { problemTitle, problemDescription, language, code, submissionId, stream } = req.body;
 
     if (!code || typeof code !== 'string') {
       return res.status(400).json({ error: 'Code is required for AI design review' });
@@ -175,37 +210,52 @@ router.post('/ai-review', authMiddleware, checkLimit('aiGenerationsPerDay'), asy
     const groqKey = req.headers['x-groq-api-key'] as string | undefined;
     const geminiKey = req.headers['x-gemini-api-key'] as string | undefined;
 
-    const systemPrompt = `You are a Principal Software Architect and Staff Engineer with 15+ years of experience in Low-Level Design (LLD), Object-Oriented Analysis and Design (OOAD), SOLID principles, and Gang of Four (GoF) design patterns.
+    const isStreaming = stream === true || req.headers.accept?.includes('text/event-stream');
 
-Your goal is to evaluate the user's LLD solution thoroughly, objectively, and constructively.
+    if (isStreaming) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      if (typeof (res as any).flushHeaders === 'function') {
+        (res as any).flushHeaders();
+      }
 
-Structure your review in clean Markdown with the following sections:
-1. **Executive Summary & Design Score**: Brief overview (1-2 sentences) and an overall score out of 10 for Design, Extensibility, and Clean Code.
-2. **SOLID Principles Assessment**:
-   - Single Responsibility Principle (SRP)
-   - Open/Closed Principle (OCP)
-   - Liskov Substitution Principle (LSP)
-   - Interface Segregation Principle (ISP)
-   - Dependency Inversion Principle (DIP)
-3. **Design Patterns Used & Evaluation**: Identify which patterns are implemented (e.g. Factory, Strategy, Observer, Singleton, Decorator, State). Are they applied correctly or is there over-engineering / missing abstraction?
-4. **Code Quality & Modularity**: Evaluation of class cohesion, coupling, naming conventions, error handling, and thread-safety if applicable.
-5. **Key Recommendations & Refactored Snippet**: Concrete, actionable refactoring advice with a concise code example demonstrating the suggested improvement.
+      let fullReview = '';
+      try {
+        fullReview = await reviewLLDSubmission(
+          code,
+          language || 'python',
+          { title: problemTitle, description: problemDescription },
+          (chunk: string) => {
+            res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+          },
+          groqKey,
+          geminiKey
+        );
 
-Be direct, technical, and constructive. Avoid fluff.`;
+        if (submissionId) {
+          await LLDSubmission.findByIdAndUpdate(submissionId, { aiReview: fullReview }).catch(() => {});
+        }
 
-    const userPrompt = `Please review this Low-Level Design implementation:
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } catch (streamError: any) {
+        res.write(`data: ${JSON.stringify({ error: streamError.message || 'Stream error' })}\n\n`);
+        res.end();
+      }
+      return;
+    }
 
-Problem: ${problemTitle || 'General LLD Exercise'}
-${problemDescription ? `Problem Statement:\n${problemDescription}\n` : ''}
-Language: ${language || 'Unknown'}
-
-User Code:
-\`\`\`${language || 'text'}
-${code}
-\`\`\`
-`;
-
-    const review = await callAI(userPrompt, systemPrompt, 1600, groqKey, geminiKey);
+    // Non-streaming fallback
+    const review = await reviewLLDSubmission(
+      code,
+      language || 'python',
+      { title: problemTitle, description: problemDescription },
+      undefined,
+      groqKey,
+      geminiKey
+    );
 
     // If a submissionId was provided, attach the AI review to the submission
     if (submissionId) {

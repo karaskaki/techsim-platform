@@ -433,20 +433,25 @@ export function LLDWorkspace() {
         }).catch(err => console.warn('Progress update failed:', err));
       }
 
-      // 3. Request AI Design Review
-      const reviewRes = await lldApi.getAiReview({
-        problemTitle: problem.title,
-        problemDescription: problem.description,
-        language,
-        code,
-        submissionId,
-      });
+      // 3. Request AI Design Review with real-time streaming
+      setAiReview('');
+      await lldApi.streamAiReview(
+        {
+          problemTitle: problem.title,
+          problemDescription: problem.description,
+          language,
+          code,
+          submissionId,
+        },
+        (chunk: string) => {
+          setAiReview(prev => (prev ? prev + chunk : chunk));
+        }
+      );
 
-      setAiReview(reviewRes.review);
       setSaveStatus('saved');
       setDirty(false);
     } catch (err: any) {
-      setAiReview(`### Review Generation Failed\n\n${err.message || 'Unable to generate AI review at this time.'}`);
+      setAiReview(prev => prev ? `${prev}\n\n[Stream disconnected: ${err.message}]` : `### Review Generation Failed\n\n${err.message || 'Unable to generate AI review at this time.'}`);
     } finally {
       setSubmitting(false);
       setReviewing(false);

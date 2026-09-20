@@ -138,48 +138,72 @@ router.post('/execute', auth_1.authMiddleware, (0, planGuard_1.requirePlan)('fre
         next(error);
     }
 });
-// ── 5. POST /api/lld/ai-review ──────────────────────────────────────────────
-// Evaluates LLD code with AI against SOLID principles, design patterns, and clean architecture
-router.post('/ai-review', auth_1.authMiddleware, (0, planGuard_1.checkLimit)('aiGenerationsPerDay'), async (req, res, next) => {
+// ── 5. POST /api/lld/ai-generate ────────────────────────────────────────────
+// Generates an LLD problem with requirements, starter code, and patterns using AI
+router.post('/ai-generate', auth_1.authMiddleware, (0, planGuard_1.checkLimit)('aiGenerationsPerDay'), rateLimiter_1.aiLimiter, async (req, res, next) => {
     try {
         if (!req.user) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
-        const { problemTitle, problemDescription, language, code, submissionId } = req.body;
+        const { topic, difficulty = 'medium', saveToDb = false } = req.body;
+        if (!topic || typeof topic !== 'string' || !topic.trim()) {
+            return res.status(400).json({ error: 'Topic is required to generate an LLD problem' });
+        }
+        const groqKey = req.headers['x-groq-api-key'];
+        const geminiKey = req.headers['x-gemini-api-key'];
+        const generatedProblem = await (0, ai_1.generateLLDProblem)(topic.trim(), difficulty, groqKey, geminiKey);
+        if (saveToDb) {
+            const problem = await lldSubmission_1.LLDProblem.findOneAndUpdate({ slug: generatedProblem.slug }, generatedProblem, { upsert: true, new: true, setDefaultsOnInsert: true });
+            return res.status(201).json({ problem });
+        }
+        return res.status(200).json({ problem: generatedProblem });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+// ── 6. POST /api/lld/ai-review ──────────────────────────────────────────────
+// Evaluates LLD code with AI against SOLID principles, design patterns, and clean architecture
+// Supports real-time streaming SSE when stream=true or Accept: text/event-stream
+router.post('/ai-review', auth_1.authMiddleware, (0, planGuard_1.checkLimit)('aiGenerationsPerDay'), rateLimiter_1.aiLimiter, async (req, res, next) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+        const { problemTitle, problemDescription, language, code, submissionId, stream } = req.body;
         if (!code || typeof code !== 'string') {
             return res.status(400).json({ error: 'Code is required for AI design review' });
         }
         const groqKey = req.headers['x-groq-api-key'];
         const geminiKey = req.headers['x-gemini-api-key'];
-        const systemPrompt = `You are a Principal Software Architect and Staff Engineer with 15+ years of experience in Low-Level Design (LLD), Object-Oriented Analysis and Design (OOAD), SOLID principles, and Gang of Four (GoF) design patterns.
-
-Your goal is to evaluate the user's LLD solution thoroughly, objectively, and constructively.
-
-Structure your review in clean Markdown with the following sections:
-1. **Executive Summary & Design Score**: Brief overview (1-2 sentences) and an overall score out of 10 for Design, Extensibility, and Clean Code.
-2. **SOLID Principles Assessment**:
-   - Single Responsibility Principle (SRP)
-   - Open/Closed Principle (OCP)
-   - Liskov Substitution Principle (LSP)
-   - Interface Segregation Principle (ISP)
-   - Dependency Inversion Principle (DIP)
-3. **Design Patterns Used & Evaluation**: Identify which patterns are implemented (e.g. Factory, Strategy, Observer, Singleton, Decorator, State). Are they applied correctly or is there over-engineering / missing abstraction?
-4. **Code Quality & Modularity**: Evaluation of class cohesion, coupling, naming conventions, error handling, and thread-safety if applicable.
-5. **Key Recommendations & Refactored Snippet**: Concrete, actionable refactoring advice with a concise code example demonstrating the suggested improvement.
-
-Be direct, technical, and constructive. Avoid fluff.`;
-        const userPrompt = `Please review this Low-Level Design implementation:
-
-Problem: ${problemTitle || 'General LLD Exercise'}
-${problemDescription ? `Problem Statement:\n${problemDescription}\n` : ''}
-Language: ${language || 'Unknown'}
-
-User Code:
-\`\`\`${language || 'text'}
-${code}
-\`\`\`
-`;
-        const review = await (0, ai_1.callAI)(userPrompt, systemPrompt, 1600, groqKey, geminiKey);
+        const isStreaming = stream === true || req.headers.accept?.includes('text/event-stream');
+        if (isStreaming) {
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            res.setHeader('X-Accel-Buffering', 'no');
+            if (typeof res.flushHeaders === 'function') {
+                res.flushHeaders();
+            }
+            let fullReview = '';
+            try {
+                fullReview = await (0, ai_1.reviewLLDSubmission)(code, language || 'python', { title: problemTitle, description: problemDescription }, (chunk) => {
+                    res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+                }, groqKey, geminiKey);
+                if (submissionId) {
+                    await lldSubmission_1.LLDSubmission.findByIdAndUpdate(submissionId, { aiReview: fullReview }).catch(() => { });
+                }
+                res.write('data: [DONE]\n\n');
+                res.end();
+            }
+            catch (streamError) {
+                res.write(`data: ${JSON.stringify({ error: streamError.message || 'Stream error' })}\n\n`);
+                res.end();
+            }
+            return;
+        }
+        // Non-streaming fallback
+        const review = await (0, ai_1.reviewLLDSubmission)(code, language || 'python', { title: problemTitle, description: problemDescription }, undefined, groqKey, geminiKey);
         // If a submissionId was provided, attach the AI review to the submission
         if (submissionId) {
             await lldSubmission_1.LLDSubmission.findByIdAndUpdate(submissionId, { aiReview: review });

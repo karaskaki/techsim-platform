@@ -337,6 +337,85 @@ export const lldApi = {
     return res.data;
   },
 
+  streamAiReview: async (
+    data: {
+      problemTitle?: string;
+      problemDescription?: string;
+      language: string;
+      code: string;
+      submissionId?: string;
+    },
+    onChunk: (chunk: string) => void
+  ): Promise<string> => {
+    const token = getToken();
+    const groqKey = localStorage.getItem('groq_api_key') || '';
+    const geminiKey = localStorage.getItem('gemini_api_key') || '';
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (groqKey) headers['X-Groq-API-Key'] = groqKey;
+    if (geminiKey) headers['X-Gemini-API-Key'] = geminiKey;
+
+    const response = await fetch(`${API_URL}/api/lld/ai-review`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ ...data, stream: true }),
+    });
+
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error || errJson.message || `Request failed with status ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('Response stream body not available');
+
+    const decoder = new TextDecoder();
+    let accumulated = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]') {
+            return accumulated;
+          }
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed.chunk) {
+              accumulated += parsed.chunk;
+              onChunk(parsed.chunk);
+            }
+            if (parsed.error) {
+              throw new Error(parsed.error);
+            }
+          } catch (e: any) {
+            if (e.message !== 'Unexpected end of JSON input') {
+              console.warn('Failed to parse SSE line:', line);
+            }
+          }
+        }
+      }
+    }
+    return accumulated;
+  },
+
+  generateProblem: async (data: { topic: string; difficulty?: string; saveToDb?: boolean }) => {
+    const res = await apiClient.post<{ problem: LLDProblem }>('/api/lld/ai-generate', data);
+    return res.data;
+  },
+
   getProgress: async () => {
     const res = await apiClient.get<LLDProgress>('/api/lld/progress');
     return res.data;
