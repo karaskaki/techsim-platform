@@ -1,8 +1,8 @@
 {
   "_metadata": {
     "task": "Task 1 — Theory Content for 7 Learning Tracks",
-    "trackCount": 7,
-    "lessonCount": 49,
+    "trackCount": 8,
+    "lessonCount": 73,
     "theoryWordRange": {
       "minimum": 301,
       "maximum": 366
@@ -637,6 +637,325 @@
           ],
           "analogy": "A restaurant prepares dishes centrally but distributes popular items through local branches while headquarters manages menus and accounts.",
           "example": "Netflix publicly documents Open Connect and adaptive playback concepts that illustrate specialized global delivery."
+        }
+      ]
+    },
+    {
+      "trackId": "lld-mastery",
+      "title": "Low Level Design Mastery",
+      "trackCategory": "LLD",
+      "lessons": [
+        {
+          "id": "lld_1",
+          "title": "Single Responsibility Principle (SRP)",
+          "practiceProblemSlug": "srp-invoice-generator",
+          "theory": "## What is the Single Responsibility Principle?\n\nThe **Single Responsibility Principle (SRP)** states: *A class should have one, and only one, reason to change.* Coined by Robert C. Martin (\"Uncle Bob\"), this principle requires that each module, class, or function should be responsible for a single actor or single part of an application's functionality.\n\nWhen a class handles multiple concerns—such as business calculations, database persistence, and PDF report generation—changes to the database schema or PDF template can inadvertently introduce bugs into your calculation logic.\n\n---\n\n## ❌ Before Refactoring (Violation)\n\nHere, the `Invoice` class calculates totals, writes to a database, and formats a receipt for printing. It has three distinct reasons to change!\n\n### Python Violation\n```python\nclass Invoice:\n    def __init__(self, items, tax_rate=0.08):\n        self.items = items\n        self.tax_rate = tax_rate\n\n    def calculate_total(self):\n        subtotal = sum(item['price'] * item['quantity'] for item in self.items)\n        return subtotal + (subtotal * self.tax_rate)\n\n    def print_receipt(self):\n        print(\"====== INVOICE ======\")\n        for item in self.items:\n            print(f\"{item['name']}: ${item['price']} x {item['quantity']}\")\n        print(f\"Total: ${self.calculate_total():.2f}\")\n\n    def save_to_database(self):\n        # Direct database access logic\n        print(f\"Executing SQL: INSERT INTO invoices VALUES (...)\")\n```\n\n### Java Violation\n```java\npublic class Invoice {\n    private List<Item> items;\n    private double taxRate;\n\n    public Invoice(List<Item> items, double taxRate) {\n        this.items = items;\n        this.taxRate = taxRate;\n    }\n\n    public double calculateTotal() {\n        double subtotal = items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();\n        return subtotal + (subtotal * taxRate);\n    }\n\n    public void printReceipt() {\n        System.out.println(\"====== INVOICE ======\");\n        for (Item item : items) {\n            System.out.println(item.getName() + \": $\" + item.getPrice() + \" x \" + item.getQuantity());\n        }\n        System.out.println(\"Total: $\" + calculateTotal());\n    }\n\n    public void saveToDatabase() {\n        System.out.println(\"Executing SQL: INSERT INTO invoices VALUES (...)\");\n    }\n}\n```\n\n---\n\n## ✅ After Refactoring (Adhering to SRP)\n\nWe decouple the responsibilities into three focused classes:\n1. `Invoice`: Domain entity responsible strictly for business logic and total calculation.\n2. `InvoicePrinter`: Presentation component formatting the output.\n3. `InvoiceRepository`: Persistence component managing database operations.\n\n### Python Refactored\n```python\nclass Invoice:\n    def __init__(self, items, tax_rate=0.08):\n        self.items = items\n        self.tax_rate = tax_rate\n\n    def calculate_total(self):\n        subtotal = sum(item['price'] * item['quantity'] for item in self.items)\n        return subtotal + (subtotal * self.tax_rate)\n\n\nclass InvoicePrinter:\n    def print_receipt(self, invoice: Invoice):\n        print(\"====== INVOICE ======\")\n        for item in invoice.items:\n            print(f\"{item['name']}: ${item['price']} x {item['quantity']}\")\n        print(f\"Total: ${invoice.calculate_total():.2f}\")\n\n\nclass InvoiceRepository:\n    def save(self, invoice: Invoice):\n        print(f\"Executing SQL: INSERT INTO invoices VALUES (...) with total ${invoice.calculate_total()}\")\n```\n\n### Java Refactored\n```java\npublic class Invoice {\n    private final List<Item> items;\n    private final double taxRate;\n\n    public Invoice(List<Item> items, double taxRate) {\n        this.items = items;\n        this.taxRate = taxRate;\n    }\n\n    public List<Item> getItems() { return items; }\n\n    public double calculateTotal() {\n        double subtotal = items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();\n        return subtotal + (subtotal * taxRate);\n    }\n}\n\npublic class InvoicePrinter {\n    public void printReceipt(Invoice invoice) {\n        System.out.println(\"====== INVOICE ======\");\n        for (Item item : invoice.getItems()) {\n            System.out.println(item.getName() + \": $\" + item.getPrice() + \" x \" + item.getQuantity());\n        }\n        System.out.println(\"Total: $\" + invoice.calculateTotal());\n    }\n}\n\npublic class InvoiceRepository {\n    public void save(Invoice invoice) {\n        System.out.println(\"Executing SQL: INSERT INTO invoices VALUES (...) with total $\" + invoice.calculateTotal());\n    }\n}\n```\n\n## Apply it\n\nRefactor an order processing class that calculates discounts, generates PDFs, and sends emails into three SRP-compliant classes.",
+          "keyPoints": [
+            "A class should have only one reason to change.",
+            "Separate domain logic, presentation, and persistence into distinct classes.",
+            "High cohesion within classes reduces unexpected side effects during changes."
+          ],
+          "analogy": "A Swiss Army knife has a dozen tools, but a master chef uses dedicated chef knives, paring knives, and cleavers for specific precision tasks.",
+          "example": "In high-scale billing systems, calculation logic changes with tax laws, while PDF generators change with brand redesigns, and storage changes during database migrations."
+        },
+        {
+          "id": "lld_2",
+          "title": "Open-Closed Principle (OCP)",
+          "practiceProblemSlug": "ocp-discount-calculator",
+          "theory": "## What is the Open-Closed Principle?\n\nThe **Open-Closed Principle (OCP)** states: *Software entities (classes, modules, functions) should be open for extension, but closed for modification.*\n\nYou should be able to extend the behavior of a system without altering its existing, tested source code. If adding a new feature requires modifying existing `if-else` or `switch` blocks, the code violates OCP.\n\n---\n\n## ❌ Before Refactoring (Violation)\n\nEvery time a new customer type or seasonal discount is introduced, we must edit the `DiscountCalculator` class, risking regression in existing discount paths.\n\n### Python Violation\n```python\nclass DiscountCalculator:\n    def calculate_discount(self, customer_type: str, amount: float) -> float:\n        if customer_type == \"REGULAR\":\n            return amount * 0.05\n        elif customer_type == \"VIP\":\n            return amount * 0.20\n        elif customer_type == \"BLACK_FRIDAY\":\n            return amount * 0.50\n        else:\n            return 0.0\n```\n\n### Java Violation\n```java\npublic class DiscountCalculator {\n    public double calculateDiscount(String customerType, double amount) {\n        if (\"REGULAR\".equalsIgnoreCase(customerType)) {\n            return amount * 0.05;\n        } else if (\"VIP\".equalsIgnoreCase(customerType)) {\n            return amount * 0.20;\n        } else if (\"BLACK_FRIDAY\".equalsIgnoreCase(customerType)) {\n            return amount * 0.50;\n        }\n        return 0.0;\n    }\n}\n```\n\n---\n\n## ✅ After Refactoring (Adhering to OCP)\n\nWe define a `DiscountStrategy` interface. New discount rules are added by implementing new classes—existing code remains untouched.\n\n### Python Refactored\n```python\nfrom abc import ABC, abstractmethod\n\nclass DiscountStrategy(ABC):\n    @abstractmethod\n    def calculate(self, amount: float) -> float:\n        pass\n\nclass RegularDiscount(DiscountStrategy):\n    def calculate(self, amount: float) -> float:\n        return amount * 0.05\n\nclass VIPDiscount(DiscountStrategy):\n    def calculate(self, amount: float) -> float:\n        return amount * 0.20\n\nclass BlackFridayDiscount(DiscountStrategy):\n    def calculate(self, amount: float) -> float:\n        return amount * 0.50\n\nclass OrderProcessor:\n    def __init__(self, discount_strategy: DiscountStrategy):\n        self.discount_strategy = discount_strategy\n\n    def get_final_price(self, amount: float) -> float:\n        return amount - self.discount_strategy.calculate(amount)\n```\n\n### Java Refactored\n```java\npublic interface DiscountStrategy {\n    double calculate(double amount);\n}\n\npublic class RegularDiscount implements DiscountStrategy {\n    public double calculate(double amount) { return amount * 0.05; }\n}\n\npublic class VIPDiscount implements DiscountStrategy {\n    public double calculate(double amount) { return amount * 0.20; }\n}\n\npublic class BlackFridayDiscount implements DiscountStrategy {\n    public double calculate(double amount) { return amount * 0.50; }\n}\n\npublic class OrderProcessor {\n    private final DiscountStrategy discountStrategy;\n\n    public OrderProcessor(DiscountStrategy discountStrategy) {\n        this.discountStrategy = discountStrategy;\n    }\n\n    public double getFinalPrice(double amount) {\n        return amount - discountStrategy.calculate(amount);\n    }\n}\n```\n\n## Apply it\n\nDesign an extensible payment processing pipeline where new payment methods (Crypto, Apple Pay, Klarna) can be plugged in without modifying the checkout service.",
+          "keyPoints": [
+            "Classes should be open for extension, but closed for modification.",
+            "Replace conditionals with polymorphism and Strategy/Factory patterns.",
+            "Prevents regression bugs in tested legacy code when adding new features."
+          ],
+          "analogy": "A computer motherboard has standardized PCIe slots. You can plug in a new graphics card without desoldering the CPU or modifying the motherboard circuitry.",
+          "example": "Payment processors like Stripe support dozens of regional payment methods (iDEAL, SEPA, Cards) through polymorphic handlers without altering core ledger code."
+        },
+        {
+          "id": "lld_3",
+          "title": "Liskov Substitution Principle (LSP)",
+          "practiceProblemSlug": "lsp-banking-account",
+          "theory": "## What is the Liskov Substitution Principle?\n\nThe **Liskov Substitution Principle (LSP)** states: *Subtypes must be substitutable for their base types without altering the correctness of the program.* Formulated by Barbara Liskov, it guarantees that derived classes adhere to the behavioral contract established by their parent class.\n\nViolations occur when a subclass overrides a method to do nothing, throws an unexpected exception (e.g. `UnsupportedOperationException`), or alters preconditions and postconditions.\n\n---\n\n## ❌ Before Refactoring (Violation)\n\nThe classic banking account violation: a `ReadOnlyAccount` or `FixedDepositAccount` inherits from `BankAccount` but throws an error on `withdraw()`. Calling code expecting a `BankAccount` crashes!\n\n### Python Violation\n```python\nclass BankAccount:\n    def __init__(self, balance=0.0):\n        self.balance = balance\n\n    def withdraw(self, amount: float):\n        if amount > self.balance:\n            raise ValueError(\"Insufficient funds\")\n        self.balance -= amount\n\nclass FixedDepositAccount(BankAccount):\n    def withdraw(self, amount: float):\n        # Fixed deposit cannot be withdrawn prematurely!\n        raise RuntimeError(\"Cannot withdraw from Fixed Deposit account before maturity!\")\n```\n\n### Java Violation\n```java\npublic class BankAccount {\n    protected double balance;\n\n    public void withdraw(double amount) {\n        if (amount > balance) throw new IllegalArgumentException(\"Insufficient funds\");\n        balance -= amount;\n    }\n}\n\npublic class FixedDepositAccount extends BankAccount {\n    @Override\n    public void withdraw(double amount) {\n        throw new UnsupportedOperationException(\"Cannot withdraw from Fixed Deposit account before maturity!\");\n    }\n}\n```\n\n---\n\n## ✅ After Refactoring (Adhering to LSP)\n\nWe segregate the hierarchy: `Account` models general account properties (balance, deposit), while `WithdrawableAccount` introduces the withdrawal contract. `FixedDepositAccount` only inherits what it genuinely supports.\n\n### Python Refactored\n```python\nclass Account:\n    def __init__(self, balance=0.0):\n        self.balance = balance\n\n    def deposit(self, amount: float):\n        self.balance += amount\n\nclass WithdrawableAccount(Account):\n    def withdraw(self, amount: float):\n        if amount > self.balance:\n            raise ValueError(\"Insufficient funds\")\n        self.balance -= amount\n\nclass CheckingAccount(WithdrawableAccount):\n    pass\n\nclass FixedDepositAccount(Account):\n    def apply_interest(self, rate: float):\n        self.balance += self.balance * rate\n```\n\n### Java Refactored\n```java\npublic abstract class Account {\n    protected double balance;\n\n    public double getBalance() { return balance; }\n    public void deposit(double amount) { balance += amount; }\n}\n\npublic abstract class WithdrawableAccount extends Account {\n    public void withdraw(double amount) {\n        if (amount > balance) throw new IllegalArgumentException(\"Insufficient funds\");\n        balance -= amount;\n    }\n}\n\npublic class CheckingAccount extends WithdrawableAccount { }\n\npublic class FixedDepositAccount extends Account {\n    public void applyInterest(double rate) {\n        balance += balance * rate;\n    }\n}\n```\n\n## Apply it\n\nIdentify the LSP violation in a Bird hierarchy where Penguin overrides fly() with an exception, and refactor using proper capability interfaces.",
+          "keyPoints": [
+            "Subclasses must fulfill the full behavioral contract of their base class.",
+            "Never throw UnsupportedOperationException for inherited methods.",
+            "Favor composition and fine-grained capability interfaces over deep inheritance trees."
+          ],
+          "analogy": "If it looks like a duck and quacks like a duck, but needs batteries, you probably have the wrong abstraction.",
+          "example": "In cloud SDKs, read-only storage replicas do not implement the write/delete interfaces of primary instances to prevent runtime authorization surprises."
+        },
+        {
+          "id": "lld_4",
+          "title": "Interface Segregation Principle (ISP)",
+          "practiceProblemSlug": "isp-multi-function-printer",
+          "theory": "## What is the Interface Segregation Principle?\n\nThe **Interface Segregation Principle (ISP)** states: *Clients should not be forced to depend upon interfaces that they do not use.*\n\nLarge, \"fat\" interfaces that lump together unrelated methods force implementing classes to provide dummy or empty implementations for methods they don't support. This couples clients to changes in methods they never call.\n\n---\n\n## ❌ Before Refactoring (Violation)\n\nA monolithic `SmartDevice` interface requires all devices to print, scan, and fax. A basic office printer is forced to stub out fax and scan methods.\n\n### Python Violation\n```python\nclass MultiFunctionDevice:\n    def print_doc(self, doc): pass\n    def scan_doc(self): pass\n    def fax_doc(self, doc): pass\n\nclass BasicPrinter(MultiFunctionDevice):\n    def print_doc(self, doc):\n        print(f\"Printing: {doc}\")\n\n    def scan_doc(self):\n        raise NotImplementedError(\"Basic printer cannot scan\")\n\n    def fax_doc(self, doc):\n        raise NotImplementedError(\"Basic printer cannot fax\")\n```\n\n### Java Violation\n```java\npublic interface MultiFunctionDevice {\n    void print(String doc);\n    void scan();\n    void fax(String doc);\n}\n\npublic class BasicPrinter implements MultiFunctionDevice {\n    public void print(String doc) { System.out.println(\"Printing: \" + doc); }\n    public void scan() { throw new UnsupportedOperationException(\"Cannot scan\"); }\n    public void fax(String doc) { throw new UnsupportedOperationException(\"Cannot fax\"); }\n}\n```\n\n---\n\n## ✅ After Refactoring (Adhering to ISP)\n\nBreak the fat interface into role-based interfaces: `Printer`, `Scanner`, and `FaxMachine`. Classes implement only what they actually support.\n\n### Python Refactored\n```python\nfrom abc import ABC, abstractmethod\n\nclass Printer(ABC):\n    @abstractmethod\n    def print_doc(self, doc: str): pass\n\nclass Scanner(ABC):\n    @abstractmethod\n    def scan_doc(self) -> str: pass\n\nclass FaxMachine(ABC):\n    @abstractmethod\n    def fax_doc(self, doc: str): pass\n\nclass BasicPrinter(Printer):\n    def print_doc(self, doc: str):\n        print(f\"Printing: {doc}\")\n\nclass AllInOneOfficePrinter(Printer, Scanner, FaxMachine):\n    def print_doc(self, doc: str): print(f\"Printing: {doc}\")\n    def scan_doc(self) -> str: return \"Scanned content\"\n    def fax_doc(self, doc: str): print(f\"Faxing: {doc}\")\n```\n\n### Java Refactored\n```java\npublic interface Printer {\n    void print(String doc);\n}\n\npublic interface Scanner {\n    String scan();\n}\n\npublic interface FaxMachine {\n    void fax(String doc);\n}\n\npublic class BasicPrinter implements Printer {\n    public void print(String doc) {\n        System.out.println(\"Printing: \" + doc);\n    }\n}\n\npublic class AllInOnePrinter implements Printer, Scanner, FaxMachine {\n    public void print(String doc) { System.out.println(\"Printing: \" + doc); }\n    public String scan() { return \"Scanned document\"; }\n    public void fax(String doc) { System.out.println(\"Faxing: \" + doc); }\n}\n```\n\n## Apply it\n\nRefactor an authentication interface containing loginWithPassword, loginWithSmsOtp, loginWithPasskey, and loginWithOAuth into discrete auth providers.",
+          "keyPoints": [
+            "Many client-specific interfaces are better than one general-purpose interface.",
+            "Avoid forcing classes to implement dummy methods or throw NotImplemented errors.",
+            "Promotes high cohesion and loose coupling between callers and callees."
+          ],
+          "analogy": "A restaurant menu that forces you to buy soup, salad, steak, and dessert together vs an à la carte menu where you order only what you want.",
+          "example": "Java’s standard library separates `Readable`, `Writable`, `AutoCloseable`, and `Flushable` rather than having one giant `Stream` interface."
+        },
+        {
+          "id": "lld_5",
+          "title": "Dependency Inversion Principle (DIP)",
+          "practiceProblemSlug": "dip-notification-service",
+          "theory": "## What is the Dependency Inversion Principle?\n\nThe **Dependency Inversion Principle (DIP)** states:\n1. *High-level modules should not depend on low-level modules. Both should depend on abstractions.*\n2. *Abstractions should not depend on details. Details should depend on abstractions.*\n\nHigh-level policy modules (like business workflows) should be independent of low-level implementation details (like MySQL, SendGrid, or AWS SQS). Inversion of Control (IoC) and Dependency Injection (DI) are the primary mechanisms to realize DIP.\n\n---\n\n## ❌ Before Refactoring (Violation)\n\n`NotificationService` directly instantiates and depends on concrete `EmailSender`. Switching to SMS or adding Push Notifications requires editing the high-level service.\n\n### Python Violation\n```python\nclass EmailSender:\n    def send(self, message: str):\n        print(f\"Sending SMTP email: {message}\")\n\nclass NotificationService:\n    def __init__(self):\n        # Direct tight coupling to concrete low-level class!\n        self.email_sender = EmailSender()\n\n    def notify(self, message: str):\n        self.email_sender.send(message)\n```\n\n### Java Violation\n```java\npublic class EmailSender {\n    public void sendEmail(String msg) {\n        System.out.println(\"Sending SMTP email: \" + msg);\n    }\n}\n\npublic class NotificationService {\n    private EmailSender emailSender;\n\n    public NotificationService() {\n        // Tightly coupled to concrete EmailSender\n        this.emailSender = new EmailSender();\n    }\n\n    public void notifyUser(String msg) {\n        emailSender.sendEmail(msg);\n    }\n}\n```\n\n---\n\n## ✅ After Refactoring (Adhering to DIP)\n\nIntroduce a `MessageSender` abstraction. `NotificationService` receives its dependency via constructor injection.\n\n### Python Refactored\n```python\nfrom abc import ABC, abstractmethod\n\nclass MessageSender(ABC):\n    @abstractmethod\n    def send(self, message: str): pass\n\nclass EmailSender(MessageSender):\n    def send(self, message: str):\n        print(f\"Sending SMTP email: {message}\")\n\nclass SmsSender(MessageSender):\n    def send(self, message: str):\n        print(f\"Sending SMS via Twilio: {message}\")\n\nclass NotificationService:\n    def __init__(self, sender: MessageSender):\n        self.sender = sender\n\n    def notify(self, message: str):\n        self.sender.send(message)\n```\n\n### Java Refactored\n```java\npublic interface MessageSender {\n    void send(String message);\n}\n\npublic class EmailSender implements MessageSender {\n    public void send(String message) {\n        System.out.println(\"Sending SMTP email: \" + message);\n    }\n}\n\npublic class SmsSender implements MessageSender {\n    public void send(String message) {\n        System.out.println(\"Sending SMS via Twilio: \" + message);\n    }\n}\n\npublic class NotificationService {\n    private final MessageSender sender;\n\n    public NotificationService(MessageSender sender) {\n        this.sender = sender;\n    }\n\n    public void notifyUser(String message) {\n        sender.send(message);\n    }\n}\n```\n\n## Apply it\n\nDesign an OrderService that depends on a PaymentGateway and InventoryService interface, demonstrating mockability in unit tests.",
+          "keyPoints": [
+            "High-level business rules must not depend on low-level I/O mechanisms.",
+            "Both high-level and low-level code must depend on stable abstractions/interfaces.",
+            "Enables effortless unit testing via mock dependencies."
+          ],
+          "analogy": "Wall electrical outlets: your laptop plug adheres to the standard 2-prong AC interface, whether the electricity is generated by solar, coal, or nuclear power.",
+          "example": "Spring Framework, NestJS, and Dagger use Dependency Injection containers to wire services to repositories, allowing zero-downtime database driver swaps."
+        },
+        {
+          "id": "lld_6",
+          "title": "Singleton Pattern",
+          "practiceProblemSlug": "thread-safe-singleton-cache",
+          "theory": "## What is the Singleton Pattern?\n\nThe **Singleton Pattern** ensures that a class has only one instance and provides a global point of access to it. It is commonly used for shared resources such as configuration managers, connection pools, and in-memory caches.\n\nKey considerations in production include **thread safety**, lazy vs eager initialization, and preventing instantiation via reflection or serialization.\n\n---\n\n## Thread-Safe Implementation\n\n### Java (Bill Pugh Singleton / Double-Checked Locking)\n```java\npublic class DatabaseConnectionPool {\n    private DatabaseConnectionPool() {\n        // Prevent reflection instantiation\n        if (InstanceHolder.INSTANCE != null) {\n            throw new IllegalStateException(\"Already instantiated\");\n        }\n    }\n\n    private static class InstanceHolder {\n        private static final DatabaseConnectionPool INSTANCE = new DatabaseConnectionPool();\n    }\n\n    public static DatabaseConnectionPool getInstance() {\n        return InstanceHolder.INSTANCE;\n    }\n}\n```\n\n### Python (Metaclass or Module-level Singleton)\n```python\nimport threading\n\nclass SingletonMeta(type):\n    _instances = {}\n    _lock = threading.Lock()\n\n    def __call__(cls, *args, **kwargs):\n        with cls._lock:\n            if cls not in cls._instances:\n                instance = super().__call__(*args, **kwargs)\n                cls._instances[cls] = instance\n        return cls._instances[cls]\n\nclass CacheManager(metaclass=SingletonMeta):\n    def __init__(self):\n        self.cache = {}\n```\n\n## Apply it\n\nBuild a thread-safe configuration registry that loads environment variables once and prevents concurrent re-initialization.",
+          "keyPoints": [
+            "Guarantees a single instance throughout application lifecycle.",
+            "Must handle multithreading correctly (double-checked locking or static holder).",
+            "Beware: can act as a hidden global variable and complicate unit testing."
+          ],
+          "analogy": "The President of a country: there is only one in office at any given time, and official decrees must come from that single recognized authority.",
+          "example": "Logging frameworks (e.g. Log4j LoggerManager) and database connection pools maintain single shared coordinators."
+        },
+        {
+          "id": "lld_7",
+          "title": "Factory Method Pattern",
+          "practiceProblemSlug": "payment-gateway-factory",
+          "theory": "## What is the Factory Method Pattern?\n\nThe **Factory Method Pattern** defines an interface for creating an object, but allows subclasses to decide which class to instantiate. It defers object creation logic to specialized creators.\n\nIt prevents client code from being tightly coupled to concrete product classes, promoting the Open-Closed Principle.\n\n---\n\n## Implementation Example\n\n```python\nfrom abc import ABC, abstractmethod\n\nclass PaymentGateway(ABC):\n    @abstractmethod\n    def process_payment(self, amount: float) -> bool: pass\n\nclass StripeGateway(PaymentGateway):\n    def process_payment(self, amount: float) -> bool:\n        print(f\"Processing ${amount} via Stripe\")\n        return True\n\nclass PayPalGateway(PaymentGateway):\n    def process_payment(self, amount: float) -> bool:\n        print(f\"Processing ${amount} via PayPal\")\n        return True\n\nclass GatewayFactory:\n    @staticmethod\n    def get_gateway(gateway_type: str) -> PaymentGateway:\n        if gateway_type == \"stripe\":\n            return StripeGateway()\n        elif gateway_type == \"paypal\":\n            return PayPalGateway()\n        raise ValueError(f\"Unknown gateway: {gateway_type}\")\n```\n\n## Apply it\n\nImplement a notification factory returning Email, SMS, or Push notification dispatchers based on user preferences.",
+          "keyPoints": [
+            "Encapsulates object creation and decouples client from concrete classes.",
+            "Follows Open-Closed Principle by allowing new products without changing caller code.",
+            "Commonly combined with parameterized factory methods."
+          ],
+          "analogy": "A car dealership: you request an electric sedan, and the dealer supplies the corresponding vehicle without you having to build the engine.",
+          "example": "JDBC’s `DriverManager.getConnection(url)` returns MySQL, PostgreSQL, or Oracle connections based on the connection string protocol."
+        },
+        {
+          "id": "lld_8",
+          "title": "Abstract Factory Pattern",
+          "practiceProblemSlug": "cross-platform-ui-factory",
+          "theory": "## What is the Abstract Factory Pattern?\n\nThe **Abstract Factory Pattern** provides an interface for creating **families of related or dependent objects** without specifying their concrete classes.\n\nUnlike Factory Method (which creates one product), Abstract Factory creates multiple related products that are designed to work together (e.g., Mac Button + Mac Checkbox vs Windows Button + Windows Checkbox).\n\n---\n\n## Implementation Example\n\n```java\npublic interface GUIFactory {\n    Button createButton();\n    Checkbox createCheckbox();\n}\n\npublic class MacFactory implements GUIFactory {\n    public Button createButton() { return new MacButton(); }\n    public Checkbox createCheckbox() { return new MacCheckbox(); }\n}\n\npublic class WinFactory implements GUIFactory {\n    public Button createButton() { return new WinButton(); }\n    public Checkbox createCheckbox() { return new WinCheckbox(); }\n}\n```\n\n## Apply it\n\nCreate a CloudResourceFactory that instantiates VM, StorageBucket, and LoadBalancer for AWS vs GCP.",
+          "keyPoints": [
+            "Creates entire families of complementary products.",
+            "Guarantees that products from the same family are used together consistently.",
+            "Adding new product variants is simple; adding new product kinds requires updating the interface."
+          ],
+          "analogy": "Furniture styles: a Modern factory makes Modern chairs and Modern tables; a Victorian factory makes Victorian chairs and Victorian tables.",
+          "example": "Cross-platform UI libraries (e.g., Qt, Flutter) instantiate native platform widgets for iOS and Android."
+        },
+        {
+          "id": "lld_9",
+          "title": "Builder Pattern",
+          "practiceProblemSlug": "http-request-builder",
+          "theory": "## What is the Builder Pattern?\n\nThe **Builder Pattern** separates the construction of a complex object from its representation, allowing the same construction process to create different representations.\n\nIt eliminates the **telescoping constructor anti-pattern** (constructors with 10+ parameters, many of which are optional or null).\n\n---\n\n## Implementation Example\n\n```python\nclass HttpRequest:\n    def __init__(self, url, method=\"GET\", headers=None, body=None, timeout=30):\n        self.url = url\n        self.method = method\n        self.headers = headers or {}\n        self.body = body\n        self.timeout = timeout\n\nclass HttpRequestBuilder:\n    def __init__(self, url: str):\n        self.request = HttpRequest(url)\n\n    def set_method(self, method: str):\n        self.request.method = method\n        return self\n\n    def add_header(self, key: str, value: str):\n        self.request.headers[key] = value\n        return self\n\n    def set_body(self, body: str):\n        self.request.body = body\n        return self\n\n    def build(self) -> HttpRequest:\n        return self.request\n```\n\n## Apply it\n\nImplement a ComputerBuilder configuring CPU, RAM, GPU, Storage, and LiquidCooling with validation in build().",
+          "keyPoints": [
+            "Constructs complex objects step-by-step with a clean, fluent API.",
+            "Replaces unwieldy constructors with many optional parameters.",
+            "Can enforce validation rules inside the terminal build() method."
+          ],
+          "analogy": "Ordering a custom Subway sandwich: you choose the bread, protein, cheeses, and toppings step-by-step before it is wrapped.",
+          "example": "Java’s `StringBuilder`, Lombok’s `@Builder`, and Apache HttpClient’s `RequestBuilder`."
+        },
+        {
+          "id": "lld_10",
+          "title": "Prototype Pattern",
+          "practiceProblemSlug": "game-character-clone",
+          "theory": "## What is the Prototype Pattern?\n\nThe **Prototype Pattern** creates new objects by copying an existing instance (the prototype), rather than creating new objects from scratch via constructors.\n\nIt is particularly valuable when object creation is computationally expensive (e.g., loading assets, fetching remote metadata, parsing huge files).\n\n---\n\n## Implementation Example\n\n```python\nimport copy\n\nclass GameNPC:\n    def __init__(self, name: str, health: int, armor: int, skills: list):\n        self.name = name\n        self.health = health\n        self.armor = armor\n        self.skills = skills\n\n    def clone(self):\n        # Deep copy ensures reference types like skills are not shared\n        return copy.deepcopy(self)\n```\n\n## Apply it\n\nCreate a DocumentTemplate system where users clone complex invoices or contract templates with pre-filled terms.",
+          "keyPoints": [
+            "Clones existing objects instead of running expensive initializations.",
+            "Be mindful of shallow vs deep copying for mutable internal structures.",
+            "Useful in games and simulation software for spawning swarms of entities."
+          ],
+          "analogy": "Mitosis / biological cell division: a cell duplicates its exact genetic blueprint rather than starting from raw molecules.",
+          "example": "JavaScript’s prototype-based object model and graphics rendering engines cloning mesh templates."
+        },
+        {
+          "id": "lld_11",
+          "title": "Adapter Pattern",
+          "practiceProblemSlug": "legacy-payment-adapter",
+          "theory": "## What is the Adapter Pattern?\n\nThe **Adapter Pattern** converts the interface of a class into another interface that clients expect. It allows classes with incompatible interfaces to collaborate.\n\nIt acts as a bridge or translation layer between modern code and legacy systems, third-party libraries, or disparate data formats.\n\n---\n\n## Implementation Example\n\n```java\n// Client expects this interface\npublic interface PaymentProcessor {\n    void pay(double amountInDollars);\n}\n\n// Incompatible legacy service\npublic class LegacyXmlPaymentService {\n    public void sendPayment(String xmlPayload) {\n        System.out.println(\"Processing XML payload: \" + xmlPayload);\n    }\n}\n\n// Adapter bridges the two\npublic class LegacyPaymentAdapter implements PaymentProcessor {\n    private final LegacyXmlPaymentService legacyService;\n\n    public LegacyPaymentAdapter(LegacyXmlPaymentService legacyService) {\n        this.legacyService = legacyService;\n    }\n\n    public void pay(double amountInDollars) {\n        String xml = \"<payment><amount>\" + amountInDollars + \"</amount></payment>\";\n        legacyService.sendPayment(xml);\n    }\n}\n```\n\n## Apply it\n\nCreate an adapter that wraps a third-party JSON weather API to conform to your application's internal WeatherProvider interface.",
+          "keyPoints": [
+            "Converts an incompatible interface into a target interface expected by callers.",
+            "Allows legacy or third-party code to integrate cleanly without code modifications.",
+            "Can be implemented via Object Adapter (composition) or Class Adapter (multiple inheritance)."
+          ],
+          "analogy": "An international power plug adapter that lets you plug a US two-prong laptop charger into a UK three-prong socket.",
+          "example": "Java’s `Arrays.asList()` adapts an array into a `List` interface."
+        },
+        {
+          "id": "lld_12",
+          "title": "Decorator Pattern",
+          "practiceProblemSlug": "coffee-shop-decorator",
+          "theory": "## What is the Decorator Pattern?\n\nThe **Decorator Pattern** attaches additional responsibilities to an object dynamically. Decorators provide a flexible alternative to subclassing for extending functionality.\n\nInstead of creating hundreds of subclasses (e.g., `MilkCoffee`, `SugarMilkCoffee`, `WhipSugarMilkCoffee`), you wrap the core object in stacking decorator layers.\n\n---\n\n## Implementation Example\n\n```python\nclass Beverage:\n    def get_cost(self) -> float: return 2.0\n    def get_description(self) -> str: return \"Simple Coffee\"\n\nclass BeverageDecorator(Beverage):\n    def __init__(self, beverage: Beverage):\n        self._beverage = beverage\n\nclass Milk(BeverageDecorator):\n    def get_cost(self) -> float:\n        return self._beverage.get_cost() + 0.5\n\n    def get_description(self) -> str:\n        return self._beverage.get_description() + \", Milk\"\n\nclass Caramel(BeverageDecorator):\n    def get_cost(self) -> float:\n        return self._beverage.get_cost() + 0.75\n\n    def get_description(self) -> str:\n        return self._beverage.get_description() + \", Caramel\"\n\n# Usage:\ndrink = Caramel(Milk(Beverage()))\nprint(f\"{drink.get_description()} = ${drink.get_cost():.2f}\")\n# Output: Simple Coffee, Milk, Caramel = $3.25\n```\n\n## Apply it\n\nBuild an HTTP client where compression (Gzip), logging, and retry logic are implemented as composable decorators.",
+          "keyPoints": [
+            "Extends object behavior dynamically at runtime without inheritance explosion.",
+            "Decorators have the same interface as the wrapped object.",
+            "Multiple decorators can be nested in arbitrary order."
+          ],
+          "analogy": "Wearing winter clothing: you wear a base shirt, wrap a sweater over it, and wrap a waterproof coat over the sweater.",
+          "example": "Java I/O streams: `new BufferedReader(new InputStreamReader(new FileInputStream(\"file.txt\")))`."
+        },
+        {
+          "id": "lld_13",
+          "title": "Facade Pattern",
+          "practiceProblemSlug": "multimedia-streaming-facade",
+          "theory": "## What is the Facade Pattern?\n\nThe **Facade Pattern** provides a simplified, higher-level interface to a complex subsystem. It shields client applications from the inner workings and inter-dependencies of dozens of subsystem classes.\n\nA facade does not encapsulate the subsystem; advanced clients can still access low-level subsystem classes if necessary.\n\n---\n\n## Implementation Example\n\n```python\nclass VideoDecoder:\n    def decode(self, file): print(\"Decoding video...\")\n\nclass AudioMixer:\n    def mix(self, file): print(\"Mixing audio tracks...\")\n\nclass SubtitleRenderer:\n    def render(self, file): print(\"Rendering subtitles...\")\n\nclass VideoPlayerFacade:\n    def __init__(self):\n        self.decoder = VideoDecoder()\n        self.mixer = AudioMixer()\n        self.subtitles = SubtitleRenderer()\n\n    def play_movie(self, filename: str):\n        print(f\"--- Starting {filename} ---\")\n        self.decoder.decode(filename)\n        self.mixer.mix(filename)\n        self.subtitles.render(filename)\n        print(\"Playback initiated.\")\n```\n\n## Apply it\n\nDesign a CheckoutFacade coordinating CartValidation, PaymentAuth, InventoryReservation, and ShippingLabelGeneration.",
+          "keyPoints": [
+            "Provides a clean, unified entry point to a complex subsystem.",
+            "Promotes weak coupling between clients and subsystem components.",
+            "Does not prevent power users from accessing underlying classes directly."
+          ],
+          "analogy": "A hotel concierge: rather than contacting housekeeping, valet, catering, and booking individually, you ask the concierge for everything.",
+          "example": "Cloud SDK facades like AWS S3 TransferManager wrapping complex multi-part uploads and retries into a single `upload()` method."
+        },
+        {
+          "id": "lld_14",
+          "title": "Composite Pattern",
+          "practiceProblemSlug": "file-system-composite",
+          "theory": "## What is the Composite Pattern?\n\nThe **Composite Pattern** allows you to compose objects into tree structures to represent part-whole hierarchies. It enables clients to treat individual objects and compositions of objects uniformly.\n\nCommon use cases include hierarchical data such as file systems, organization charts, UI component trees, and graphic vector shapes.\n\n---\n\n## Implementation Example\n\n```python\nfrom abc import ABC, abstractmethod\n\nclass FileSystemNode(ABC):\n    @abstractmethod\n    def get_size(self) -> int: pass\n\nclass File(FileSystemNode):\n    def __init__(self, name: str, size: int):\n        self.name = name\n        self.size = size\n\n    def get_size(self) -> int:\n        return self.size\n\nclass Directory(FileSystemNode):\n    def __init__(self, name: str):\n        self.name = name\n        self.children = []\n\n    def add(self, node: FileSystemNode):\n        self.children.append(node)\n\n    def get_size(self) -> int:\n        return sum(child.get_size() for child in self.children)\n```\n\n## Apply it\n\nDesign an organization hierarchy where employees and departments calculate total payroll uniformly.",
+          "keyPoints": [
+            "Represents tree structures where leaves and containers share a common interface.",
+            "Clients treat individual leaf items and composite branches identically.",
+            "Simplifies client code by eliminating recursive type-checking."
+          ],
+          "analogy": "Russian nesting dolls or shipping boxes: a small box contains items; a master crate contains smaller boxes and items, all weighed the same way.",
+          "example": "DOM (Document Object Model) where both simple text elements and container `<div>` elements implement `Node`."
+        },
+        {
+          "id": "lld_15",
+          "title": "Proxy Pattern",
+          "practiceProblemSlug": "caching-database-proxy",
+          "theory": "## What is the Proxy Pattern?\n\nThe **Proxy Pattern** provides a surrogate or placeholder for another object to control access to it. Proxies can perform lazy initialization (Virtual Proxy), access control (Protection Proxy), caching (Caching Proxy), or network communication (Remote Proxy).\n\nThe proxy implements the same interface as the real subject, making it transparent to clients.\n\n---\n\n## Implementation Example\n\n```python\nclass DatabaseReader:\n    def query(self, sql: str) -> str:\n        print(f\"Executing slow database query: {sql}\")\n        return \"Query result\"\n\nclass CachingDatabaseProxy:\n    def __init__(self, real_reader: DatabaseReader):\n        self.real_reader = real_reader\n        self.cache = {}\n\n    def query(self, sql: str) -> str:\n        if sql not in self.cache:\n            self.cache[sql] = self.real_reader.query(sql)\n        else:\n            print(f\"Returning cached result for: {sql}\")\n        return self.cache[sql]\n```\n\n## Apply it\n\nImplement a ProtectionProxy checking user roles before invoking critical operations on an AdminService.",
+          "keyPoints": [
+            "Controls access to the original object transparently.",
+            "Types: Virtual (lazy load), Protection (auth), Caching, Remote (RPC).",
+            "Maintains identical interface to the target object."
+          ],
+          "analogy": "A credit card is a proxy for a bank account; it provides access to funds without requiring physical cash transfer.",
+          "example": "Hibernate/JPA lazy loading proxies for database relationships, and Nginx acting as a reverse proxy."
+        },
+        {
+          "id": "lld_16",
+          "title": "Observer Pattern",
+          "practiceProblemSlug": "stock-ticker-observer",
+          "theory": "## What is the Observer Pattern?\n\nThe **Observer Pattern** defines a one-to-many dependency between objects so that when one object (the Subject) changes state, all its dependents (Observers) are notified and updated automatically.\n\nIt is foundational to reactive programming, event-driven architectures, and UI event listeners (e.g. DOM clicks).\n\n---\n\n## Implementation Example\n\n```python\nclass StockTicker:\n    def __init__(self, symbol: str):\n        self.symbol = symbol\n        self.price = 0.0\n        self._observers = []\n\n    def attach(self, observer):\n        self._observers.append(observer)\n\n    def set_price(self, price: float):\n        self.price = price\n        self._notify()\n\n    def _notify(self):\n        for obs in self._observers:\n            obs.update(self.symbol, self.price)\n\nclass MobileDisplay:\n    def update(self, symbol: str, price: float):\n        print(f\"[Mobile Display] {symbol} is now ${price:.2f}\")\n\nclass AlertSystem:\n    def update(self, symbol: str, price: float):\n        if price > 100.0:\n            print(f\"[ALERT] {symbol} crossed $100 threshold!\")\n```\n\n## Apply it\n\nBuild a YouTube channel subscriber notification system with Push, Email, and SMS observers.",
+          "keyPoints": [
+            "Decouples subjects from observers; subject only knows observers implement an update interface.",
+            "Supports broadcast communication to an arbitrary number of subscribers.",
+            "Be careful with memory leaks (dangling observers) — unregister when no longer needed."
+          ],
+          "analogy": "Newspaper subscription: you subscribe to a daily paper, and the distributor delivers it to your doorstep each morning without polling.",
+          "example": "Kafka / RabbitMQ pub-sub systems, React state subscriptions, and Node.js `EventEmitter`."
+        },
+        {
+          "id": "lld_17",
+          "title": "Strategy Pattern",
+          "practiceProblemSlug": "navigation-route-strategy",
+          "theory": "## What is the Strategy Pattern?\n\nThe **Strategy Pattern** defines a family of algorithms, encapsulates each one, and makes them interchangeable. Strategy lets the algorithm vary independently from clients that use it.\n\nIt replaces massive conditional logic (`if-else` or `switch` on algorithms) with clean object composition.\n\n---\n\n## Implementation Example\n\n```python\nfrom abc import ABC, abstractmethod\n\nclass RouteStrategy(ABC):\n    @abstractmethod\n    def build_route(self, origin: str, destination: str): pass\n\nclass FastestCarRoute(RouteStrategy):\n    def build_route(self, origin, destination):\n        print(f\"Routing by highways: {origin} -> {destination}\")\n\nclass ScenicBikeRoute(RouteStrategy):\n    def build_route(self, origin, destination):\n        print(f\"Routing through parks: {origin} -> {destination}\")\n\nclass Navigator:\n    def __init__(self, strategy: RouteStrategy):\n        self.strategy = strategy\n\n    def set_strategy(self, strategy: RouteStrategy):\n        self.strategy = strategy\n\n    def navigate(self, origin: str, destination: str):\n        self.strategy.build_route(origin, destination)\n```\n\n## Apply it\n\nImplement a sorting utility that switches between QuickSort, MergeSort, and InsertionSort based on array size.",
+          "keyPoints": [
+            "Encapsulates interchangeable algorithms inside separate classes.",
+            "Allows switching algorithms dynamically at runtime.",
+            "Eliminates deeply nested conditionals and adheres to Open-Closed Principle."
+          ],
+          "analogy": "Traveling to the airport: you can choose the strategy of driving, taking the train, or hailing a cab based on traffic and budget.",
+          "example": "Java’s `Collections.sort(list, comparator)` where `Comparator` is a strategy."
+        },
+        {
+          "id": "lld_18",
+          "title": "State Pattern",
+          "practiceProblemSlug": "vending-machine-state",
+          "theory": "## What is the State Pattern?\n\nThe **State Pattern** allows an object to alter its behavior when its internal state changes. The object will appear to change its class.\n\nIt models **finite state machines (FSM)** cleanly by encapsulating state-specific behavior in separate state classes, avoiding sprawling `switch (currentState)` statements across every method.\n\n---\n\n## Implementation Example\n\n```python\nfrom abc import ABC, abstractmethod\n\nclass VendingMachineState(ABC):\n    @abstractmethod\n    def insert_coin(self, machine): pass\n    @abstractmethod\n    def select_item(self, machine): pass\n    @abstractmethod\n    def dispense(self, machine): pass\n\nclass IdleState(VendingMachineState):\n    def insert_coin(self, machine):\n        print(\"Coin accepted.\")\n        machine.set_state(machine.has_coin_state)\n\n    def select_item(self, machine):\n        print(\"Please insert coin first.\")\n\n    def dispense(self, machine):\n        print(\"No item selected.\")\n\nclass HasCoinState(VendingMachineState):\n    def insert_coin(self, machine):\n        print(\"Coin already inserted.\")\n\n    def select_item(self, machine):\n        print(\"Item selected. Dispensing...\")\n        machine.set_state(machine.dispensing_state)\n\n    def dispense(self, machine):\n        print(\"Please select item first.\")\n```\n\n## Apply it\n\nDesign a TCPConnection state machine transitioning across Closed, Listen, SynReceived, and Established states.",
+          "keyPoints": [
+            "Encapsulates state-dependent behavior in discrete state objects.",
+            "Transitions are explicit and localized to state classes.",
+            "Avoids combinatorial explosion of conditional logic."
+          ],
+          "analogy": "A smartphone screen: pressing the power button turns on the display if off, or locks the phone if already on.",
+          "example": "Order status lifecycles (Created -> Paid -> Shipped -> Delivered -> Refunded) in e-commerce backends."
+        },
+        {
+          "id": "lld_19",
+          "title": "Command Pattern",
+          "practiceProblemSlug": "smart-home-remote-command",
+          "theory": "## What is the Command Pattern?\n\nThe **Command Pattern** encapsulates a request as an object, thereby letting you parameterize clients with different requests, queue or log requests, and support **undoable operations**.\n\nIt completely decouples the invoker (who initiates the action) from the receiver (who performs the actual work).\n\n---\n\n## Implementation Example\n\n```python\nclass Light:\n    def turn_on(self): print(\"Light is ON\")\n    def turn_off(self): print(\"Light is OFF\")\n\nclass Command:\n    def execute(self): pass\n    def undo(self): pass\n\nclass LightOnCommand(Command):\n    def __init__(self, light: Light):\n        self.light = light\n\n    def execute(self):\n        self.light.turn_on()\n\n    def undo(self):\n        self.light.turn_off()\n\nclass RemoteControl:\n    def __init__(self):\n        self.history = []\n\n    def press_button(self, command: Command):\n        command.execute()\n        self.history.append(command)\n\n    def press_undo(self):\n        if self.history:\n            cmd = self.history.pop()\n            cmd.undo()\n```\n\n## Apply it\n\nImplement a text editor command stack supporting type, delete, and copy with unlimited undo/redo capability.",
+          "keyPoints": [
+            "Encapsulates a request as an object with execute() and undo() methods.",
+            "Enables command history, queuing, logging, and transactional rollbacks.",
+            "Decouples invokers from receivers."
+          ],
+          "analogy": "A restaurant order slip: the waiter writes your order on a slip and places it on the kitchen queue. The cook prepares the meal without interacting with you directly.",
+          "example": "GUI button action handlers, thread pools executing `Runnable` commands, and transaction rollbacks."
+        },
+        {
+          "id": "lld_20",
+          "title": "Chain of Responsibility Pattern",
+          "practiceProblemSlug": "request-logger-chain",
+          "theory": "## What is the Chain of Responsibility Pattern?\n\nThe **Chain of Responsibility Pattern** passes requests along a chain of handlers. Upon receiving a request, each handler decides either to process the request or to pass it to the next handler in the chain.\n\nIt avoids coupling the sender of a request to its receiver, giving multiple objects a chance to handle the request.\n\n---\n\n## Implementation Example\n\n```python\nclass Handler:\n    def __init__(self, next_handler=None):\n        self.next_handler = next_handler\n\n    def handle(self, request):\n        if self.next_handler:\n            return self.next_handler.handle(request)\n        return True\n\nclass AuthHandler(Handler):\n    def handle(self, request):\n        if not request.get(\"auth_token\"):\n            print(\"Auth failed! Dropping request.\")\n            return False\n        print(\"Auth check passed.\")\n        return super().handle(request)\n\nclass RateLimitHandler(Handler):\n    def handle(self, request):\n        if request.get(\"requests_per_sec\", 0) > 100:\n            print(\"Rate limit exceeded! Throttling.\")\n            return False\n        print(\"Rate limit passed.\")\n        return super().handle(request)\n```\n\n## Apply it\n\nDesign an ATM cash dispenser dispensing $100, $50, and $20 bills using a chain of handlers.",
+          "keyPoints": [
+            "Decouples request sender from concrete receivers.",
+            "Handlers can be added, removed, or reordered dynamically at runtime.",
+            "Guarantees requests pass through necessary security and validation stages."
+          ],
+          "analogy": "An escalating customer support hierarchy: front-desk agent -> technical support specialist -> engineering team lead.",
+          "example": "Express.js middleware chains (`app.use((req, res, next) => ...)`) and Spring Security filters."
+        },
+        {
+          "id": "lld_21",
+          "title": "OOD Framework: Requirements Gathering & Scope",
+          "practiceProblemSlug": "parking-lot-system",
+          "theory": "## What is the OOD Interview Framework?\n\nObject-Oriented Design (OOD) interviews assess your ability to take ambiguous problem statements (e.g. *\"Design a Parking Lot\"* or *\"Design an Elevator System\"*) and turn them into clean, modular, extensible object models.\n\nThe first 5-8 minutes of the interview should be strictly dedicated to **Requirements Gathering and Scope Clarification**.\n\n---\n\n## Step-by-Step Methodology\n\n1. **Clarify Core Functional Requirements**:\n   - What vehicle types are supported (Motorcycles, Compact cars, Large buses)?\n   - Are there multiple entrances and exits?\n   - How is billing calculated (Hourly, flat rate, vehicle-dependent)?\n2. **Identify Non-Functional Constraints**:\n   - Concurrency: Can two cars enter different gates simultaneously?\n   - In-memory vs persistent storage.\n3. **Explicitly Out-of-Scope Items**:\n   - Agree with the interviewer on what to exclude (e.g. payment gateway integration, hardware license plate scanners).\n\n## Apply it\n\nDefine the functional and non-functional requirements for a multi-floor Parking Lot system supporting compact, regular, and truck spots.",
+          "keyPoints": [
+            "Never jump straight to writing classes or drawing diagrams.",
+            "Clarify 3-5 core user journeys and agree on out-of-scope boundaries.",
+            "Define scale and concurrency expectations upfront."
+          ],
+          "analogy": "Architectural blueprinting: you agree on the number of floors, rooms, and budget with the client before buying bricks and concrete.",
+          "example": "Senior staff engineer interviews at Google, Meta, and Amazon always start with scoping before class design."
+        },
+        {
+          "id": "lld_22",
+          "title": "OOD Framework: Identifying Entities & CRC Modeling",
+          "practiceProblemSlug": "elevator-system",
+          "theory": "## Identifying Entities & CRC Cards\n\nOnce requirements are established, extract the domain entities:\n- **Nouns** become candidate classes: `Elevator`, `Button`, `Floor`, `Door`, `Dispatcher`.\n- **Verbs** become candidate methods: `pressButton()`, `openDoor()`, `moveUp()`, `dispatchElevator()`.\n\n### CRC (Class-Responsibility-Collaboration) Modeling\n\nFor each candidate class, write down:\n1. **Class Name**: Clear and unambiguous noun.\n2. **Responsibilities**: What does this class know (state) and what does it do (behavior)?\n3. **Collaborators**: Which other classes does it interact with?\n\n---\n\n## Avoiding the \"God Object\" Anti-Pattern\n\nA common failure mode is dumping all logic into an `ElevatorSystem` class with 50 methods. Distribute responsibilities:\n- `ElevatorCar`: Tracks current floor, direction, and door state.\n- `ElevatorController`: Coordinates multiple cars and assigns optimal cars to floor requests.\n- `DispatchStrategy`: Encapsulates dispatch algorithms (SCAN, LOOK, FCFS).\n\n## Apply it\n\nCreate CRC specifications for an Elevator System with multiple cars and internal/external buttons.",
+          "keyPoints": [
+            "Extract candidate classes from problem nouns and behaviors from verbs.",
+            "Assign single responsibilities to each entity.",
+            "Avoid God Objects by delegating coordination to specialized managers and dispatchers."
+          ],
+          "analogy": "A film crew: the director coordinates, the cameraman shoots, the sound engineer records; no single person does everything.",
+          "example": "Uber/Lyft driver dispatch modeling separating Driver, RideRequest, MatchingEngine, and PricingEngine."
+        },
+        {
+          "id": "lld_23",
+          "title": "OOD Framework: Object Relationships & Design Smells",
+          "practiceProblemSlug": "rate-limiter-lld",
+          "theory": "## Modeling Relationships: Association, Aggregation & Composition\n\nUnderstanding the exact nature of relationships between classes prevents memory leaks and architectural confusion:\n\n1. **Association**: \"Uses a\" — loose reference without ownership (e.g. `Driver` uses `Car`).\n2. **Aggregation**: \"Has a\" — parent contains child, but child can exist independently (e.g. `Department` has `Employees`).\n3. **Composition**: \"Contains a\" — child cannot exist without the parent (e.g. `House` contains `Rooms`).\n4. **Inheritance**: \"Is a\" — use sparingly; favor composition!\n\n---\n\n## Design Smells to Avoid\n\n- **Feature Envy**: Method in Class A accesses data of Class B more than its own. (Move the method to Class B!).\n- **Tight Coupling**: Concrete instantiation inside business methods.\n- **Primitive Obsession**: Using raw strings and integers instead of value objects (e.g. `String amount` instead of `Money(currency, value)`).\n\n## Apply it\n\nModel a Rate Limiter with Sliding Window Counter using clean object composition between RateLimiter, TokenBucket, and WindowStore.",
+          "keyPoints": [
+            "Distinguish Association, Aggregation, and Composition.",
+            "Favor object composition over deep class inheritance.",
+            "Eliminate Feature Envy and Primitive Obsession during design."
+          ],
+          "analogy": "Car engine parts: pistons are composed into an engine block (they have no independent life outside), while tires can be swapped independently.",
+          "example": "In distributed rate limiters, token buckets are composed within client rate limiting profiles with pluggable Redis storage adapters."
+        },
+        {
+          "id": "lld_24",
+          "title": "OOD Framework: Extensibility & Concurrency Trade-offs",
+          "practiceProblemSlug": "tic-tac-toe-game",
+          "theory": "## Designing for Extensibility & Concurrency\n\nThe final phase of an LLD interview is answering the interviewer's \"What if?\" questions:\n- *\"What if we want to change the board size from 3x3 to NxN?\"*\n- *\"What if we add AI players or network multiplayer?\"*\n- *\"What if two users make a move simultaneously?\"*\n\n---\n\n## Extensibility Checklist\n\n1. **Parameterize Dimensions**: Avoid hardcoded `3x3` or `board[3][3]` arrays.\n2. **Strategy Pattern for Winning Conditions**: Decouple win-checking from board state (e.g. row, column, diagonal checkers).\n3. **Thread Safety**: Use synchronized methods, ReadWriteLocks, or atomic variables when concurrent access is anticipated.\n4. **Clean Code & Readability**: Follow consistent naming conventions and keep methods under 20 lines.\n\n## Apply it\n\nDesign an extensible NxN Tic-Tac-Toe game supporting multiple players and pluggable winning evaluation strategies.",
+          "keyPoints": [
+            "Anticipate interviewer pushbacks and demonstrate design extensibility.",
+            "Avoid hardcoded dimensions and assumptions in business rules.",
+            "Address thread safety and state synchronization proactively."
+          ],
+          "analogy": "Modular furniture: an expandable dining table has hidden leaves that slide out when guests arrive without requiring a whole new table.",
+          "example": "Gaming engines (like Chess or Go engines) use modular board representations and pluggable evaluation heuristics."
         }
       ]
     }

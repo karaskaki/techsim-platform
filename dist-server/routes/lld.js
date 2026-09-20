@@ -7,6 +7,7 @@ const rateLimiter_1 = require("../middleware/rateLimiter");
 const ai_1 = require("../lib/ai");
 const codeExecutor_1 = require("../lib/codeExecutor");
 const lldSubmission_1 = require("../models/lldSubmission");
+const seed_lld_1 = require("../seed-lld");
 const router = (0, express_1.Router)();
 // ── 1. GET /api/lld/problems ────────────────────────────────────────────────
 // List problems with optional filtering by pattern, difficulty, and search term
@@ -27,9 +28,18 @@ router.get('/problems', async (req, res, next) => {
                 { patternTags: { $regex: search.trim(), $options: 'i' } },
             ];
         }
-        const problems = await lldSubmission_1.LLDProblem.find(query)
+        let problems = await lldSubmission_1.LLDProblem.find(query)
             .select('-referenceSolution')
             .sort({ createdAt: -1 });
+        // Auto-seed initial problems if collection is empty
+        if (problems.length === 0 && Object.keys(query).length === 0) {
+            for (const p of seed_lld_1.INITIAL_LLD_PROBLEMS) {
+                await lldSubmission_1.LLDProblem.findOneAndUpdate({ slug: p.slug }, p, { upsert: true });
+            }
+            problems = await lldSubmission_1.LLDProblem.find(query)
+                .select('-referenceSolution')
+                .sort({ createdAt: -1 });
+        }
         return res.status(200).json({
             count: problems.length,
             problems,
@@ -45,7 +55,14 @@ router.get('/problems/:slug', async (req, res, next) => {
     try {
         const rawSlug = req.params.slug;
         const slug = (Array.isArray(rawSlug) ? rawSlug[0] : rawSlug || '').toLowerCase();
-        const problem = await lldSubmission_1.LLDProblem.findOne({ slug }).select('-referenceSolution');
+        let problem = await lldSubmission_1.LLDProblem.findOne({ slug }).select('-referenceSolution');
+        if (!problem) {
+            // Check fallback initial problems
+            const fallback = seed_lld_1.INITIAL_LLD_PROBLEMS.find(p => p.slug === slug);
+            if (fallback) {
+                problem = await lldSubmission_1.LLDProblem.findOneAndUpdate({ slug }, fallback, { upsert: true, new: true }).select('-referenceSolution');
+            }
+        }
         if (!problem) {
             return res.status(404).json({ error: `Problem with slug '${slug}' not found` });
         }

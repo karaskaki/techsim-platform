@@ -478,12 +478,36 @@ export function LessonPage() {
                 li: ({ children }) => (
                   <li style={{ marginBottom: 6, lineHeight: 1.7 }}>{children}</li>
                 ),
-                code: ({ children }) => (
-                  <code style={{
-                    background: 'var(--bg-tertiary)', padding: '2px 6px', borderRadius: 4,
-                    fontSize: 13, fontFamily: 'monospace', color: '#A78BFA',
-                  }}>{children}</code>
-                ),
+                code: ({ children, className }) => {
+                  const isBlock = String(children).includes('\n') || (className && className.startsWith('language-'));
+                  if (isBlock) {
+                    return (
+                      <pre style={{
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 8,
+                        padding: '14px 16px',
+                        overflowX: 'auto',
+                        margin: '1.25rem 0',
+                      }}>
+                        <code style={{
+                          fontFamily: "'IBM Plex Mono', 'Consolas', monospace",
+                          fontSize: 13,
+                          color: '#E2E8F0',
+                          lineHeight: 1.6,
+                        }}>
+                          {children}
+                        </code>
+                      </pre>
+                    );
+                  }
+                  return (
+                    <code style={{
+                      background: 'var(--bg-tertiary)', padding: '2px 6px', borderRadius: 4,
+                      fontSize: 13, fontFamily: 'monospace', color: '#A78BFA',
+                    }}>{children}</code>
+                  );
+                },
               }}
             >
               {theory.content}
@@ -519,30 +543,53 @@ export function LessonPage() {
             </HighlightBox>
           )}
 
-          {/* Canvas Exercise */}
+          {/* Exercise / Practice Section */}
           {theory.exercise && (
             <>
-              <SectionHeading>Canvas Exercise</SectionHeading>
+              <SectionHeading>
+                {theory.trackCategory === 'LLD' || theory.practiceProblemSlug ? 'LLD Practice Exercise' : 'Canvas Exercise'}
+              </SectionHeading>
               <div style={{
-                background: 'rgba(124,58,237,0.06)',
-                border: '1px dashed rgba(124,58,237,0.35)',
+                background: (theory.trackCategory === 'LLD' || theory.practiceProblemSlug)
+                  ? 'rgba(16,185,129,0.06)'
+                  : 'rgba(124,58,237,0.06)',
+                border: `1px dashed ${(theory.trackCategory === 'LLD' || theory.practiceProblemSlug)
+                  ? 'rgba(16,185,129,0.35)'
+                  : 'rgba(124,58,237,0.35)'}`,
                 borderRadius: 10, padding: '16px 18px',
               }}>
                 <div style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 14 }}>
                   {theory.exercise}
                 </div>
-                <button
-                  onClick={() => navigate('/canvas')}
-                  style={{
-                    padding: '8px 18px', borderRadius: 7,
-                    background: 'rgba(124,58,237,0.18)',
-                    border: '1px solid rgba(124,58,237,0.45)',
-                    color: '#A78BFA', fontSize: 12.5, cursor: 'pointer',
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  Open Canvas →
-                </button>
+                {theory.trackCategory === 'LLD' || theory.practiceProblemSlug ? (
+                  <button
+                    onClick={() => navigate(`/lld/practice/${theory.practiceProblemSlug || 'parking-lot-system'}`)}
+                    style={{
+                      padding: '9px 20px', borderRadius: 7,
+                      background: 'rgba(16,185,129,0.18)',
+                      border: '1px solid rgba(16,185,129,0.45)',
+                      color: '#10B981', fontSize: 13, cursor: 'pointer',
+                      fontFamily: "'DM Sans', sans-serif", fontWeight: 600,
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                    }}
+                  >
+                    <span>💻</span>
+                    <span>Practice in LLD IDE →</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate('/canvas')}
+                    style={{
+                      padding: '8px 18px', borderRadius: 7,
+                      background: 'rgba(124,58,237,0.18)',
+                      border: '1px solid rgba(124,58,237,0.45)',
+                      color: '#A78BFA', fontSize: 12.5, cursor: 'pointer',
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    Open Canvas →
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -587,6 +634,7 @@ export function LessonPage() {
             display: 'flex', justifyContent: 'space-between',
             marginTop: 48, paddingTop: 24,
             borderTop: '1px solid var(--border)',
+            alignItems: 'center', flexWrap: 'wrap', gap: 12,
           }}>
             <Link
               to="/learn"
@@ -600,20 +648,37 @@ export function LessonPage() {
               ← Back to Tracks
             </Link>
 
-            {nextLesson && (
-              <Link
-                to={`/learn/${trackId}/${nextLesson.id}`}
-                style={{
-                  padding: '10px 20px', borderRadius: 8,
-                  background: lessonDone ? 'rgba(34,197,94,0.12)' : 'rgba(124,58,237,0.12)',
-                  border: `1px solid ${lessonDone ? 'rgba(34,197,94,0.4)' : 'rgba(124,58,237,0.35)'}`,
-                  color: lessonDone ? '#22C55E' : '#A78BFA',
-                  fontSize: 13, textDecoration: 'none',
-                }}
-              >
-                Next: {nextLesson.title} →
-              </Link>
-            )}
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              {(theory.trackCategory === 'LLD' || theory.practiceProblemSlug) && (
+                <button
+                  onClick={() => navigate(`/lld/practice/${theory.practiceProblemSlug || 'parking-lot-system'}`)}
+                  style={{
+                    padding: '10px 20px', borderRadius: 8,
+                    background: 'rgba(16,185,129,0.12)',
+                    border: '1px solid rgba(16,185,129,0.35)',
+                    color: '#10B981', fontSize: 13, cursor: 'pointer',
+                    fontFamily: "'DM Sans', sans-serif", fontWeight: 600,
+                  }}
+                >
+                  Practice in IDE 💻
+                </button>
+              )}
+
+              {nextLesson && (
+                <Link
+                  to={`/learn/${trackId}/${nextLesson.id}`}
+                  style={{
+                    padding: '10px 20px', borderRadius: 8,
+                    background: lessonDone ? 'rgba(34,197,94,0.12)' : 'rgba(124,58,237,0.12)',
+                    border: `1px solid ${lessonDone ? 'rgba(34,197,94,0.4)' : 'rgba(124,58,237,0.35)'}`,
+                    color: lessonDone ? '#22C55E' : '#A78BFA',
+                    fontSize: 13, textDecoration: 'none',
+                  }}
+                >
+                  Next: {nextLesson.title} →
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>

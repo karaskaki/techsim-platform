@@ -6,6 +6,8 @@ import { generateLLDProblem, reviewLLDSubmission } from '../lib/ai';
 import { executeCode } from '../lib/codeExecutor';
 import { LLDProblem, LLDSubmission, LLDProgress } from '../models/lldSubmission';
 
+import { INITIAL_LLD_PROBLEMS } from '../seed-lld';
+
 const router = Router();
 
 // ── 1. GET /api/lld/problems ────────────────────────────────────────────────
@@ -32,9 +34,19 @@ router.get('/problems', async (req: Request, res: Response, next: NextFunction) 
       ];
     }
 
-    const problems = await LLDProblem.find(query)
+    let problems = await LLDProblem.find(query)
       .select('-referenceSolution')
       .sort({ createdAt: -1 });
+
+    // Auto-seed initial problems if collection is empty
+    if (problems.length === 0 && Object.keys(query).length === 0) {
+      for (const p of INITIAL_LLD_PROBLEMS) {
+        await LLDProblem.findOneAndUpdate({ slug: p.slug }, p, { upsert: true });
+      }
+      problems = await LLDProblem.find(query)
+        .select('-referenceSolution')
+        .sort({ createdAt: -1 });
+    }
 
     return res.status(200).json({
       count: problems.length,
@@ -52,7 +64,19 @@ router.get('/problems/:slug', async (req: Request, res: Response, next: NextFunc
     const rawSlug = req.params.slug;
     const slug = (Array.isArray(rawSlug) ? rawSlug[0] : rawSlug || '').toLowerCase();
 
-    const problem = await LLDProblem.findOne({ slug }).select('-referenceSolution');
+    let problem = await LLDProblem.findOne({ slug }).select('-referenceSolution');
+    if (!problem) {
+      // Check fallback initial problems
+      const fallback = INITIAL_LLD_PROBLEMS.find(p => p.slug === slug);
+      if (fallback) {
+        problem = await LLDProblem.findOneAndUpdate(
+          { slug },
+          fallback,
+          { upsert: true, new: true }
+        ).select('-referenceSolution');
+      }
+    }
+
     if (!problem) {
       return res.status(404).json({ error: `Problem with slug '${slug}' not found` });
     }

@@ -11,6 +11,7 @@ const TRACK_THEORY_MAP: Record<string, { theoryTrackId: string; lessonIdPrefix: 
   'database-design':            { theoryTrackId: 'backend',      lessonIdPrefix: 'l2_' },
   'microservices':              { theoryTrackId: 'backend',      lessonIdPrefix: 'l2_' },
   'performance-scalability':    { theoryTrackId: 'cloud',        lessonIdPrefix: 'l4_' },
+  'low-level-design-mastery':   { theoryTrackId: 'lld-mastery',  lessonIdPrefix: 'lld_' },
 };
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -32,6 +33,7 @@ interface Track {
   color: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   hours: string;
+  trackCategory: 'HLD' | 'LLD';
   lessons: Lesson[];
 }
 
@@ -46,6 +48,7 @@ const TRACKS: Track[] = [
     color: '#7C3AED',
     difficulty: 'Beginner',
     hours: '6h',
+    trackCategory: 'HLD',
     lessons: [
       { id: 'sdf-1', title: 'What is System Design?', description: 'Overview of system design interviews and real-world architecture decisions.', duration: '20 min', tags: ['overview', 'career'], type: 'concept' },
       { id: 'sdf-2', title: 'Client-Server Architecture', description: 'How browsers, mobile apps, and APIs communicate. HTTP, REST, and request lifecycle.', duration: '35 min', tags: ['http', 'rest', 'api'], type: 'concept' },
@@ -63,6 +66,7 @@ const TRACKS: Track[] = [
     color: '#2563EB',
     difficulty: 'Advanced',
     hours: '10h',
+    trackCategory: 'HLD',
     lessons: [
       { id: 'ds-1', title: 'CAP Theorem & PACELC', description: 'Consistency, Availability, Partition tolerance — and why you always choose two in a distributed system.', duration: '45 min', tags: ['cap', 'consistency', 'availability'], type: 'concept' },
       { id: 'ds-2', title: 'Eventual Consistency in Practice', description: 'How DynamoDB, Cassandra, and CouchDB achieve high availability through eventual consistency.', duration: '50 min', tags: ['eventual-consistency', 'dynamo'], type: 'case-study' },
@@ -80,6 +84,7 @@ const TRACKS: Track[] = [
     color: '#D97706',
     difficulty: 'Intermediate',
     hours: '8h',
+    trackCategory: 'HLD',
     lessons: [
       { id: 'db-1', title: 'Relational vs Non-Relational', description: 'When to use PostgreSQL, MySQL, MongoDB, Cassandra, or Redis. Trade-off analysis with real examples.', duration: '35 min', tags: ['sql', 'nosql', 'trade-offs'], type: 'concept' },
       { id: 'db-2', title: 'Indexing Deep Dive', description: 'B-trees, hash indexes, compound indexes, covering indexes, and when indexes hurt more than they help.', duration: '50 min', tags: ['indexing', 'b-tree', 'performance'], type: 'hands-on' },
@@ -97,6 +102,7 @@ const TRACKS: Track[] = [
     color: '#DC2626',
     difficulty: 'Intermediate',
     hours: '7h',
+    trackCategory: 'HLD',
     lessons: [
       { id: 'ns-1', title: 'TCP/IP Stack Internals', description: 'How packets flow from your browser to a server. TCP handshake, flow control, and congestion control.', duration: '45 min', tags: ['tcp', 'networking', 'packets'], type: 'concept' },
       { id: 'ns-2', title: 'TLS 1.3 & Certificate Chains', description: 'Public key cryptography, certificate authorities, OCSP stapling, and mutual TLS (mTLS).', duration: '50 min', tags: ['tls', 'certificates', 'crypto'], type: 'concept' },
@@ -114,6 +120,7 @@ const TRACKS: Track[] = [
     color: '#0891B2',
     difficulty: 'Intermediate',
     hours: '9h',
+    trackCategory: 'HLD',
     lessons: [
       { id: 'ms-1', title: 'Microservices vs Monolith', description: 'When microservices make sense (and when they don\'t). Conway\'s Law, team topology, and decomposition strategies.', duration: '40 min', tags: ['architecture', 'trade-offs', 'conways-law'], type: 'concept' },
       { id: 'ms-2', title: 'Service Discovery & API Gateways', description: 'Client-side vs server-side discovery. Consul, Kubernetes DNS, API gateway patterns (aggregation, BFF).', duration: '50 min', tags: ['service-discovery', 'api-gateway', 'kubernetes'], type: 'hands-on' },
@@ -131,6 +138,7 @@ const TRACKS: Track[] = [
     color: '#059669',
     difficulty: 'Advanced',
     hours: '8h',
+    trackCategory: 'HLD',
     lessons: [
       { id: 'ps-1', title: 'Caching Strategies & Cache Hierarchies', description: 'L1/L2/L3 caches, CDN, Redis, in-process caches. Cache-aside, write-through, write-back, read-through.', duration: '50 min', tags: ['caching', 'redis', 'cdn'], type: 'concept' },
       { id: 'ps-2', title: 'Database Query Optimization', description: 'EXPLAIN plans, N+1 queries, connection pooling, prepared statements, and materialized views.', duration: '55 min', tags: ['sql', 'query-optimization', 'performance'], type: 'hands-on' },
@@ -148,6 +156,7 @@ const TRACKS: Track[] = [
     color: '#7C3AED',
     difficulty: 'Advanced',
     hours: '7h',
+    trackCategory: 'HLD',
     lessons: [
       { id: 'ce-1', title: 'Principles of Chaos Engineering', description: 'Netflix\'s Simian Army, hypothesis-driven experimentation, and the chaos engineering mindset.', duration: '35 min', tags: ['chaos', 'netflix', 'resilience'], type: 'concept' },
       { id: 'ce-2', title: 'SLOs, SLAs, and Error Budgets', description: 'Google SRE error budget model. Defining availability targets, measuring SLO burn rate, and toil reduction.', duration: '45 min', tags: ['sre', 'slo', 'error-budget'], type: 'concept' },
@@ -155,6 +164,47 @@ const TRACKS: Track[] = [
       { id: 'ce-4', title: 'Running Chaos Experiments', description: 'Using TechSim\'s chaos panel — crash nodes, inject latency, partition networks, and observe cascades.', duration: '50 min', tags: ['chaos-sim', 'experiments', 'hands-on'], type: 'hands-on' },
       { id: 'ce-5', title: 'Incident Management & Postmortems', description: 'Blameless postmortems, 5-Whys, action items, and building a culture of learning from failures.', duration: '40 min', tags: ['incidents', 'postmortem', 'culture'], type: 'case-study' },
       { id: 'ce-6', title: 'Game Days & Disaster Recovery', description: 'Planning and running game days. RTO/RPO targets, runbooks, and testing DR procedures.', duration: '45 min', tags: ['game-day', 'dr', 'runbooks'], type: 'hands-on' },
+    ],
+  },
+  {
+    id: 'low-level-design-mastery',
+    title: 'Low Level Design Mastery',
+    description: 'Master Object-Oriented Design, SOLID principles, GoF design patterns, and system modeling for LLD interviews.',
+    icon: '🧩',
+    color: '#10B981',
+    difficulty: 'Intermediate',
+    hours: '14h',
+    trackCategory: 'LLD',
+    lessons: [
+      // SOLID Principles
+      { id: 'lld-1', title: 'Single Responsibility Principle (SRP)', description: 'One reason to change. Decouple business logic, presentation, and persistence with Python & Java refactoring.', duration: '35 min', tags: ['solid', 'srp', 'clean-code'], type: 'hands-on' },
+      { id: 'lld-2', title: 'Open-Closed Principle (OCP)', description: 'Open for extension, closed for modification. Eliminate switch statements using Strategy and Polymorphism.', duration: '35 min', tags: ['solid', 'ocp', 'strategy'], type: 'hands-on' },
+      { id: 'lld-3', title: 'Liskov Substitution Principle (LSP)', description: 'Subtypes must be substitutable for base types. Avoid behavioral contract surprises in inheritance.', duration: '30 min', tags: ['solid', 'lsp', 'inheritance'], type: 'concept' },
+      { id: 'lld-4', title: 'Interface Segregation Principle (ISP)', description: 'Clients should not depend on unused interfaces. Break fat interfaces into client-specific contracts.', duration: '30 min', tags: ['solid', 'isp', 'interfaces'], type: 'concept' },
+      { id: 'lld-5', title: 'Dependency Inversion Principle (DIP)', description: 'High-level modules must depend on abstractions. Implement Inversion of Control and Dependency Injection.', duration: '35 min', tags: ['solid', 'dip', 'dependency-injection'], type: 'hands-on' },
+      // Creational Patterns
+      { id: 'lld-6', title: 'Singleton Pattern', description: 'Single global instance with thread safety, double-checked locking, and reflection defense.', duration: '30 min', tags: ['creational', 'singleton', 'concurrency'], type: 'hands-on' },
+      { id: 'lld-7', title: 'Factory Method Pattern', description: 'Interface for creating objects while letting subclasses decide which concrete class to instantiate.', duration: '30 min', tags: ['creational', 'factory-method'], type: 'hands-on' },
+      { id: 'lld-8', title: 'Abstract Factory Pattern', description: 'Creating families of related or dependent objects without specifying concrete classes.', duration: '35 min', tags: ['creational', 'abstract-factory'], type: 'concept' },
+      { id: 'lld-9', title: 'Builder Pattern', description: 'Construct complex objects step-by-step with fluent APIs, solving telescoping constructors.', duration: '35 min', tags: ['creational', 'builder', 'fluent-api'], type: 'hands-on' },
+      { id: 'lld-10', title: 'Prototype Pattern', description: 'Cloning existing objects to bypass expensive initialization; deep vs shallow copy semantics.', duration: '25 min', tags: ['creational', 'prototype', 'cloning'], type: 'concept' },
+      // Structural Patterns
+      { id: 'lld-11', title: 'Adapter Pattern', description: 'Convert incompatible interfaces to allow legacy services or third-party APIs to collaborate.', duration: '30 min', tags: ['structural', 'adapter', 'integration'], type: 'hands-on' },
+      { id: 'lld-12', title: 'Decorator Pattern', description: 'Dynamically attach responsibilities to objects at runtime, avoiding combinatorial subclass explosion.', duration: '35 min', tags: ['structural', 'decorator', 'composition'], type: 'hands-on' },
+      { id: 'lld-13', title: 'Facade Pattern', description: 'Provide a simplified, unified interface to a complex subsystem for cleaner client interactions.', duration: '25 min', tags: ['structural', 'facade'], type: 'concept' },
+      { id: 'lld-14', title: 'Composite Pattern', description: 'Compose objects into tree structures to treat individual items and groups uniformly.', duration: '35 min', tags: ['structural', 'composite', 'trees'], type: 'hands-on' },
+      { id: 'lld-15', title: 'Proxy Pattern', description: 'Control access to objects via Virtual (lazy load), Protection (auth), or Caching surrogates.', duration: '30 min', tags: ['structural', 'proxy', 'caching'], type: 'hands-on' },
+      // Behavioral Patterns
+      { id: 'lld-16', title: 'Observer Pattern', description: 'One-to-many publish-subscribe dependency where state changes trigger automatic subscriber updates.', duration: '35 min', tags: ['behavioral', 'observer', 'pub-sub'], type: 'hands-on' },
+      { id: 'lld-17', title: 'Strategy Pattern', description: 'Encapsulate a family of algorithms into interchangeable classes selectable at runtime.', duration: '30 min', tags: ['behavioral', 'strategy', 'algorithms'], type: 'hands-on' },
+      { id: 'lld-18', title: 'State Pattern', description: 'Allow objects to alter behavior as internal state changes, modeling clean finite state machines.', duration: '35 min', tags: ['behavioral', 'state', 'fsm'], type: 'hands-on' },
+      { id: 'lld-19', title: 'Command Pattern', description: 'Encapsulate requests as objects to parameterize callers, queue jobs, and support undo/redo.', duration: '35 min', tags: ['behavioral', 'command', 'undo-redo'], type: 'hands-on' },
+      { id: 'lld-20', title: 'Chain of Responsibility Pattern', description: 'Pass requests along a chain of handlers for decoupled processing and pipeline architectures.', duration: '30 min', tags: ['behavioral', 'chain-of-responsibility'], type: 'hands-on' },
+      // OOD Interview Framework
+      { id: 'lld-21', title: 'OOD Framework: Requirements & Scope', description: 'Clarify core use cases, define constraints, and agree on out-of-scope boundaries in the first 8 minutes.', duration: '30 min', tags: ['interview', 'requirements', 'scoping'], type: 'case-study' },
+      { id: 'lld-22', title: 'OOD Framework: Identifying Entities & CRC', description: 'Extract candidate classes from nouns, methods from verbs, and distribute responsibilities without God Objects.', duration: '35 min', tags: ['interview', 'crc', 'class-diagrams'], type: 'case-study' },
+      { id: 'lld-23', title: 'OOD Framework: Object Relationships', description: 'Master Association, Aggregation, and Composition, and eliminate Feature Envy and Primitive Obsession.', duration: '35 min', tags: ['interview', 'relationships', 'code-smells'], type: 'case-study' },
+      { id: 'lld-24', title: 'OOD Framework: Extensibility & Trade-offs', description: 'Anticipate interviewer pushbacks, design for NxN scale, and articulate concurrency and locking choices.', duration: '40 min', tags: ['interview', 'extensibility', 'concurrency'], type: 'case-study' },
     ],
   },
 ];
@@ -203,6 +253,12 @@ export function LearnPage() {
   const [completed, setCompleted] = useState<Set<string>>(loadLocalCompleted);
   const [activeTrack, setActiveTrack] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<'ALL' | 'HLD' | 'LLD'>(() => {
+    const last = localStorage.getItem('lastTrack');
+    if (last === 'LLD') return 'LLD';
+    if (last === 'HLD') return 'HLD';
+    return 'ALL';
+  });
 
   // Load from API on mount, merge with localStorage
   useEffect(() => {
@@ -262,6 +318,10 @@ export function LearnPage() {
   );
   const overallPct = Math.round((completedCount / totalLessons) * 100);
 
+  const filteredTracks = selectedCategory === 'ALL'
+    ? TRACKS
+    : TRACKS.filter(t => t.trackCategory === selectedCategory);
+
   return (
     <div style={{
       flex: 1, overflowY: 'auto',
@@ -270,7 +330,7 @@ export function LearnPage() {
       fontFamily: "'DM Sans', sans-serif",
     }}>
       {/* Header */}
-      <div style={{ marginBottom: '2rem' }}>
+      <div style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <h1 style={{
@@ -280,7 +340,7 @@ export function LearnPage() {
               Learning Paths
             </h1>
             <p style={{ color: 'var(--text-dim)', fontSize: 13.5, margin: '6px 0 0', fontFamily: "'IBM Plex Mono', monospace" }}>
-              {TRACKS.length} tracks · {totalLessons} lessons · hands-on simulations included
+              {TRACKS.length} tracks · {totalLessons} lessons · hands-on simulations & IDE exercises included
             </p>
           </div>
 
@@ -312,13 +372,57 @@ export function LearnPage() {
         </div>
       </div>
 
+      {/* Track Category Filter Tabs */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: '2rem', flexWrap: 'wrap' }}>
+        {[
+          { id: 'ALL', label: 'All Tracks', count: TRACKS.length },
+          { id: 'HLD', label: 'High Level Design (HLD)', count: TRACKS.filter(t => t.trackCategory === 'HLD').length },
+          { id: 'LLD', label: 'Low Level Design (LLD)', count: TRACKS.filter(t => t.trackCategory === 'LLD').length },
+        ].map(cat => {
+          const isSelected = selectedCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id as 'ALL' | 'HLD' | 'LLD')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "'DM Sans', sans-serif",
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: isSelected ? 'var(--accent)' : 'var(--card-bg)',
+                border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
+                color: isSelected ? '#FFFFFF' : 'var(--text-dim)',
+              }}
+            >
+              <span>{cat.label}</span>
+              <span style={{
+                fontSize: 11,
+                padding: '1px 7px',
+                borderRadius: 10,
+                background: isSelected ? 'rgba(255,255,255,0.22)' : 'var(--bg-tertiary)',
+                color: isSelected ? '#FFFFFF' : 'var(--text-muted)',
+                fontFamily: "'IBM Plex Mono', monospace",
+              }}>
+                {cat.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Track grid */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
         gap: 16,
       }}>
-        {TRACKS.map(track => {
+        {filteredTracks.map(track => {
           const trackCompleted = track.lessons.filter(l => completed.has(l.id)).length;
           const trackPct = Math.round((trackCompleted / track.lessons.length) * 100);
           const isOpen = activeTrack === track.id;

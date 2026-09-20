@@ -51,11 +51,14 @@ export interface TheoryLesson {
   analogy: string;
   realWorldExample: string;
   exercise: string;
+  trackCategory?: 'HLD' | 'LLD';
+  practiceProblemSlug?: string;
 }
 
 export interface TheoryTrack {
   trackId: string;
   title: string;
+  trackCategory?: 'HLD' | 'LLD';
   lessons: TheoryLesson[];
 }
 
@@ -71,7 +74,9 @@ export function getLessonTheory(trackId: string, lessonId: string): TheoryLesson
     keyPoints: lesson.keyPoints,
     analogy: lesson.analogy,
     realWorldExample: lesson.example,
-    exercise: lesson.theory.includes('## Apply it') ? lesson.theory.split('## Apply it')[1]?.trim() : ''
+    exercise: lesson.theory.includes('## Apply it') ? lesson.theory.split('## Apply it')[1]?.trim() : (lesson.exercise || ''),
+    trackCategory: lesson.trackCategory || track?.trackCategory || 'HLD',
+    practiceProblemSlug: lesson.practiceProblemSlug
   };
 }
 
@@ -82,6 +87,7 @@ export function getTheoryTrack(trackId: string): TheoryTrack | undefined {
   return {
     trackId: track.trackId,
     title: track.title,
+    trackCategory: track.trackCategory || 'HLD',
     lessons: track.lessons.map((lesson: any) => ({
       id: lesson.id,
       title: lesson.title,
@@ -89,7 +95,9 @@ export function getTheoryTrack(trackId: string): TheoryTrack | undefined {
       keyPoints: lesson.keyPoints,
       analogy: lesson.analogy,
       realWorldExample: lesson.example,
-      exercise: lesson.theory.includes('## Apply it') ? lesson.theory.split('## Apply it')[1]?.trim() : ''
+      exercise: lesson.theory.includes('## Apply it') ? lesson.theory.split('## Apply it')[1]?.trim() : (lesson.exercise || ''),
+      trackCategory: lesson.trackCategory || track.trackCategory || 'HLD',
+      practiceProblemSlug: lesson.practiceProblemSlug
     }))
   };
 }

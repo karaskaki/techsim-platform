@@ -1,9 +1,9 @@
 {
   "_metadata": {
     "task": "Task 4 — Quiz Questions",
-    "lessonCount": 49,
+    "lessonCount": 58,
     "questionsPerLesson": 5,
-    "questionCount": 245,
+    "questionCount": 290,
     "note": "Questions emphasize design judgement, failure handling, and trade-offs rather than isolated term memorization.",
     "formatVersion": "1.0.0"
   },
@@ -3484,6 +3484,645 @@
           "correct": "B",
           "explanation": "The proposal to challenge is: Avoid copying advanced CDN infrastructure when a managed CDN is sufficient for the stated scale. The other choices are valid design considerations from the lesson, while this proposal skips an important constraint or creates an avoidable anti-pattern.",
           "difficulty": "hard"
+        }
+      ]
+    },
+    {
+      "lessonId": "lld_1",
+      "lessonTitle": "Single Responsibility Principle (SRP)",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "Which of the following is the most accurate definition of the Single Responsibility Principle?",
+          "options": [
+            "A class should have one, and only one, reason to change.",
+            "A class should only have one method.",
+            "A function should never take more than one parameter.",
+            "Each database table should map to exactly one class."
+          ],
+          "correct": "A",
+          "explanation": "SRP states that a class should have only one reason to change, meaning it should be responsible for a single actor or concern.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q2",
+          "question": "An Employee class contains calculatePay(), reportHours(), and saveEmployeeToDatabase(). How does this violate SRP?",
+          "options": [
+            "It mixes accounting calculations, HR reporting, and database persistence—three different actors with distinct reasons to change.",
+            "Methods cannot contain verbs like report or save.",
+            "calculatePay() must always be static.",
+            "It does not violate SRP if the company is small."
+          ],
+          "correct": "A",
+          "explanation": "The class caters to three separate actors (CFO/Accounting, COO/HR, and CTO/DBA). Changes requested by one actor risk breaking functionality for the others.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q3",
+          "question": "What is the primary benefit of adhering to SRP?",
+          "options": [
+            "High cohesion within classes, lower coupling between modules, and reduced risk of regression bugs.",
+            "It eliminates the need for unit testing.",
+            "It automatically speeds up code execution by 50%.",
+            "It allows all classes to be written in a single file."
+          ],
+          "correct": "A",
+          "explanation": "SRP increases class cohesion and decreases coupling, making classes easier to understand, test, and maintain without unintended side effects.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q4",
+          "question": "How should an Invoice class that prints receipts and saves to SQL be refactored?",
+          "options": [
+            "Separate it into Invoice (domain entity), InvoicePrinter (presentation), and InvoiceRepository (persistence).",
+            "Make all methods private so callers cannot see them.",
+            "Combine the print and save methods into one executeAll() method.",
+            "Inherit Invoice from DatabaseConnection."
+          ],
+          "correct": "A",
+          "explanation": "Decoupling domain calculation, presentation formatting, and database storage into distinct classes satisfies SRP.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q5",
+          "question": "Which code smell most strongly suggests an SRP violation?",
+          "options": [
+            "A God Object or Swiss Army knife class with hundreds of methods touching unrelated subsystems.",
+            "A class with only two fields.",
+            "Using interfaces instead of concrete classes.",
+            "Having unit tests for private methods."
+          ],
+          "correct": "A",
+          "explanation": "A God Object that knows or does too much is the classic manifestation of an SRP violation.",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    {
+      "lessonId": "lld_2",
+      "lessonTitle": "Open-Closed Principle (OCP)",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What does the Open-Closed Principle stipulate?",
+          "options": [
+            "Classes should be open for extension, but closed for modification.",
+            "Source code files must be read-only in production.",
+            "Open-source libraries should never be modified.",
+            "Classes should be open to inheritance, but closed to composition."
+          ],
+          "correct": "A",
+          "explanation": "OCP means you should be able to introduce new behavior without altering existing, tested source code.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q2",
+          "question": "Which design pattern is most commonly used to achieve OCP?",
+          "options": [
+            "Strategy or Factory Method pattern.",
+            "Singleton pattern.",
+            "Active Record pattern.",
+            "Flyweight pattern."
+          ],
+          "correct": "A",
+          "explanation": "Strategy and Factory patterns encapsulate variable behavior behind interfaces, enabling extension without modifying existing classes.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q3",
+          "question": "A method uses switch (paymentType) to process Visa, MasterCard, and Amex. Adding PayPal requires adding another case. What does this violate?",
+          "options": [
+            "Open-Closed Principle.",
+            "Single Responsibility Principle only.",
+            "Dependency Inversion Principle only.",
+            "Law of Demeter."
+          ],
+          "correct": "A",
+          "explanation": "Modifying existing switch statements to add new payment types violates OCP. A polymorphic PaymentProcessor interface should be used.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q4",
+          "question": "Why is modifying tested legacy code to add a new feature considered risky?",
+          "options": [
+            "It risks introducing regressions in existing, working behavior.",
+            "It violates database foreign key constraints.",
+            "It automatically invalidates all git commit hashes.",
+            "It prevents the compiler from optimizing byte code."
+          ],
+          "correct": "A",
+          "explanation": "Editing existing code risks inadvertently breaking established behavior, which OCP explicitly guards against.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q5",
+          "question": "How do plugin architectures (like VS Code or WordPress) demonstrate OCP?",
+          "options": [
+            "New features are added via plugins implementing standardized APIs without editing core application source code.",
+            "They force all plugins to be written in assembly language.",
+            "They compile plugins into the Linux kernel.",
+            "They avoid using interfaces."
+          ],
+          "correct": "A",
+          "explanation": "Plugins extend core functionality through published interfaces without requiring changes to the host application codebase.",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    {
+      "lessonId": "lld_3",
+      "lessonTitle": "Liskov Substitution Principle (LSP)",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the core rule of the Liskov Substitution Principle?",
+          "options": [
+            "Subtypes must be substitutable for their base types without altering the correctness of the program.",
+            "Subclasses must override every method of their parent class.",
+            "All subclasses must have the same name as their base class.",
+            "Base classes must be declared abstract."
+          ],
+          "correct": "A",
+          "explanation": "LSP ensures that client code using a base class reference can work with any subclass without unexpected behavior or errors.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q2",
+          "question": "Why does a Square inheriting from Rectangle violate LSP if setWidth and setHeight can be called independently?",
+          "options": [
+            "Changing the width of a Square unexpectedly modifies its height, breaking the contract expected of a Rectangle.",
+            "Squares are not geometric shapes.",
+            "Java does not allow geometric inheritance.",
+            "Rectangle is an interface, not a class."
+          ],
+          "correct": "A",
+          "explanation": "A client assuming a Rectangle expects setWidth() to leave height untouched. Square violates this behavioral expectation.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q3",
+          "question": "Which method implementation in a subclass is a telltale sign of an LSP violation?",
+          "options": [
+            "Throwing UnsupportedOperationException or doing nothing for an inherited method.",
+            "Calling super.method().",
+            "Adding a new private helper method.",
+            "Logging the method execution time."
+          ],
+          "correct": "A",
+          "explanation": "Throwing UnsupportedOperationException indicates the subclass cannot fulfill the base class contract.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q4",
+          "question": "What are the rules regarding preconditions and postconditions under LSP?",
+          "options": [
+            "Subclasses cannot strengthen preconditions or weaken postconditions.",
+            "Subclasses must strengthen both preconditions and postconditions.",
+            "Subclasses cannot have any preconditions.",
+            "Preconditions must be identical strings in all classes."
+          ],
+          "correct": "A",
+          "explanation": "A subclass cannot demand more (strengthen preconditions) or promise less (weaken postconditions) than the base class.",
+          "difficulty": "hard"
+        },
+        {
+          "id": "q5",
+          "question": "How should a Bird hierarchy be structured if Penguin cannot fly?",
+          "options": [
+            "Create a FlyingBird subclass or a Flyable interface that only flying birds implement.",
+            "Make Penguin throw an exception in fly().",
+            "Make fly() return null in Penguin.",
+            "Force Penguin to inherit from Fish."
+          ],
+          "correct": "A",
+          "explanation": "Segregating flying capability into a separate interface or subclass preserves LSP for non-flying birds.",
+          "difficulty": "easy"
+        }
+      ]
+    },
+    {
+      "lessonId": "lld_4",
+      "lessonTitle": "Interface Segregation Principle (ISP)",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What does the Interface Segregation Principle advise?",
+          "options": [
+            "Clients should not be forced to depend on interfaces they do not use.",
+            "Every class must implement at least ten interfaces.",
+            "All methods in an interface must return void.",
+            "Interfaces should contain all possible methods across an entire domain."
+          ],
+          "correct": "A",
+          "explanation": "ISP states that fine-grained, client-specific interfaces are better than large, general-purpose \"fat\" interfaces.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q2",
+          "question": "What is a \"fat interface\"?",
+          "options": [
+            "An interface that bunches together unrelated methods, forcing implementers to provide empty or dummy implementations.",
+            "An interface with large method names.",
+            "An interface that consumes more than 1MB of memory.",
+            "An interface written in C++."
+          ],
+          "correct": "A",
+          "explanation": "A fat interface lacks cohesion and bundles too many distinct responsibilities together.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q3",
+          "question": "A Worker interface defines work(), eat(), and sleep(). Why does this violate ISP for a RobotWorker?",
+          "options": [
+            "Robots do not eat or sleep, so RobotWorker is forced to implement meaningless methods.",
+            "Robots cannot work.",
+            "Workers must always be human.",
+            "Interfaces cannot have three methods."
+          ],
+          "correct": "A",
+          "explanation": "RobotWorker is forced to depend on eat() and sleep(), violating ISP. Separate Workable and Feedable interfaces are needed.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q4",
+          "question": "How does ISP improve maintainability when changing an interface?",
+          "options": [
+            "Modifying an interface only affects clients that actually use those specific methods, minimizing ripple effects.",
+            "It eliminates the need to compile code.",
+            "It automatically merges Git pull requests.",
+            "It ensures all methods run in constant time O(1)."
+          ],
+          "correct": "A",
+          "explanation": "Smaller role interfaces shield unrelated classes from recompilation or changes when other capabilities evolve.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q5",
+          "question": "Which Java standard library design pattern exemplifies ISP?",
+          "options": [
+            "Separating Readable, Appendable, AutoCloseable, and Flushable interfaces.",
+            "The java.lang.Object god class.",
+            "The Vector and Hashtable legacy classes.",
+            "Thread.stop() and Thread.suspend()."
+          ],
+          "correct": "A",
+          "explanation": "Java streams break capabilities into discrete interfaces (Readable, Flushable, AutoCloseable), letting classes implement only relevant roles.",
+          "difficulty": "medium"
+        }
+      ]
+    },
+    {
+      "lessonId": "lld_5",
+      "lessonTitle": "Dependency Inversion Principle (DIP)",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What are the two core tenets of the Dependency Inversion Principle?",
+          "options": [
+            "High-level modules should not depend on low-level modules (both depend on abstractions); abstractions should not depend on details.",
+            "Code should run backwards; tests should run before writing classes.",
+            "Databases should control the application logic; frontend should dictate backend schema.",
+            "Subclasses should inherit from leaf classes."
+          ],
+          "correct": "A",
+          "explanation": "DIP states high-level policies should be decoupled from low-level details by placing stable abstractions between them.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q2",
+          "question": "What is the relationship between DIP, Inversion of Control (IoC), and Dependency Injection (DI)?",
+          "options": [
+            "DIP is the architectural principle; IoC is the design pattern; DI is the specific implementation technique.",
+            "They are three completely unrelated concepts.",
+            "DI is a principle, IoC is a compiler flag, and DIP is a database query.",
+            "IoC has been deprecated in favor of static singletons."
+          ],
+          "correct": "A",
+          "explanation": "DIP is the high-level goal, IoC inverts control of execution flow, and DI supplies dependencies from the outside.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q3",
+          "question": "Why does new EmailService() inside a UserNotificationManager constructor violate DIP?",
+          "options": [
+            "It tightly couples the high-level UserNotificationManager to the concrete low-level EmailService implementation.",
+            "Constructors cannot instantiate objects in modern programming languages.",
+            "EmailService must always be a static utility.",
+            "It creates an infinite recursive loop."
+          ],
+          "correct": "A",
+          "explanation": "Direct instantiation creates tight coupling to a concrete class, preventing mock testing or swapping to SMS/Push notifications.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q4",
+          "question": "How does DIP facilitate effective unit testing?",
+          "options": [
+            "Dependencies can be easily substituted with mocks or stubs during test execution.",
+            "It eliminates the need for test assertions.",
+            "It compiles tests into web workers.",
+            "It guarantees 100% test coverage automatically."
+          ],
+          "correct": "A",
+          "explanation": "By depending on interfaces, unit tests can inject mock implementations without connecting to real databases or networks.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q5",
+          "question": "Which design mechanism is typically used to inject dependencies into a class under DIP?",
+          "options": [
+            "Constructor injection or setter injection.",
+            "Global static variables.",
+            "Hardcoded singleton references.",
+            "Direct disk reads in each method."
+          ],
+          "correct": "A",
+          "explanation": "Constructor injection is the industry-standard way to supply required dependencies explicitly.",
+          "difficulty": "easy"
+        }
+      ]
+    },
+    {
+      "lessonId": "lld_6",
+      "lessonTitle": "Singleton Pattern",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What problem does the Singleton pattern solve?",
+          "options": [
+            "Ensuring a class has only one instance and providing a global access point to it.",
+            "Allowing multiple instances to be pooled in memory.",
+            "Converting an interface into a compatible format.",
+            "Decoupling algorithms from data structures."
+          ],
+          "correct": "A",
+          "explanation": "Singleton guarantees a single instance throughout the application lifecycle.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q2",
+          "question": "What is the purpose of the \"double-checked locking\" idiom in Singleton implementations?",
+          "options": [
+            "To avoid synchronization overhead on every getInstance() call while maintaining thread safety.",
+            "To lock the database twice before writing.",
+            "To prevent garbage collection from cleaning up the instance.",
+            "To check user authentication and authorization simultaneously."
+          ],
+          "correct": "A",
+          "explanation": "Double-checked locking checks the instance without synchronization first, only locking if the instance is null.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q3",
+          "question": "Why is the Singleton pattern sometimes criticized as an anti-pattern?",
+          "options": [
+            "It acts as a global state, introduces hidden dependencies, and makes unit testing difficult.",
+            "It consumes twice as much memory as regular classes.",
+            "It is unsupported in modern multi-core processors.",
+            "It cannot be used with JSON serialization."
+          ],
+          "correct": "A",
+          "explanation": "Singletons introduce tight coupling and global mutable state, making isolated unit testing challenging.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q4",
+          "question": "In Java, how does the Bill Pugh Singleton (Initialization-on-demand holder idiom) achieve lazy loading safely?",
+          "options": [
+            "The static inner class is loaded by the JVM only when getInstance() is called, ensuring thread safety without explicit locks.",
+            "It uses volatile keywords on all CPU registers.",
+            "It runs on a separate background thread.",
+            "It relies on garbage collector finalizers."
+          ],
+          "correct": "A",
+          "explanation": "The JVM guarantees class loading is thread-safe, so the static holder initializes the instance safely on demand.",
+          "difficulty": "hard"
+        },
+        {
+          "id": "q5",
+          "question": "How can reflection break a standard Java Singleton, and how is it prevented?",
+          "options": [
+            "AccessibleObject.setAccessible(true) can invoke private constructors; prevent by throwing an exception if an instance already exists.",
+            "Reflection cannot access private constructors in Java.",
+            "By declaring the class final.",
+            "By using public fields."
+          ],
+          "correct": "A",
+          "explanation": "Reflection can make private constructors accessible; defending against this requires checking if an instance was already created.",
+          "difficulty": "hard"
+        }
+      ]
+    },
+    {
+      "id": "lld_24",
+      "lessonTitle": "OOD Framework: Extensibility & Trade-offs",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "In a Tic-Tac-Toe design interview, how do you make the game extensible to an NxN board?",
+          "options": [
+            "Parameterize board dimensions in the constructor and abstract the win-checking algorithm from hardcoded 3x3 coordinates.",
+            "Create 100 if-else statements for each possible board size.",
+            "Require the user to edit the source code before running the game.",
+            "Use a 3D graphics engine."
+          ],
+          "correct": "A",
+          "explanation": "Passing board dimensions dynamically and using generalized row/column/diagonal evaluation supports any board size.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q2",
+          "question": "How can you support different player types (Human, Minimax AI, Random Bot) in a game design?",
+          "options": [
+            "Define a Player interface with a makeMove(Board board) method implemented by HumanPlayer and AIPlayer.",
+            "Put all AI algorithms directly inside the Board class.",
+            "Make Player a final class with no subclasses.",
+            "Use global switch statements on player.type."
+          ],
+          "correct": "A",
+          "explanation": "Using polymorphism via a Player interface lets the game loop treat humans and bots identically.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q3",
+          "question": "Why do interviewers frequently ask \"How would you handle multiple users making moves concurrently?\"",
+          "options": [
+            "To test your awareness of race conditions, thread safety, and concurrency synchronization (locks, atomic variables).",
+            "To see if you know how to install Kubernetes.",
+            "To test your typing speed in the terminal.",
+            "Because games must always run on distributed clusters."
+          ],
+          "correct": "A",
+          "explanation": "Concurrency questions assess whether your state mutations are safe when multiple threads access shared state.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q4",
+          "question": "What is the risk of over-engineering an LLD solution during an interview?",
+          "options": [
+            "Introducing premature design patterns (e.g. Abstract Factory, Visitor) for simple problems, running out of time before core functionality works.",
+            "The code becomes too fast for the interviewer to read.",
+            "The compiler rejects patterns with more than 3 classes.",
+            "Interviewers only accept code written in C."
+          ],
+          "correct": "A",
+          "explanation": "Balance is key: apply patterns only where requirements genuinely warrant them, rather than pattern-stuffing.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q5",
+          "question": "When an interviewer pushes back on a design choice (e.g. \"Why use Strategy here instead of a simple method?\"), what is the best response?",
+          "options": [
+            "Articulate the trade-offs: explain the extensibility benefits vs additional class complexity, and show willingness to adapt if requirements change.",
+            "Argue that the Gang of Four book demands it.",
+            "Immediately erase all code and start over.",
+            "Refuse to answer."
+          ],
+          "correct": "A",
+          "explanation": "Senior engineering interviews test your trade-off analysis and communication, not dogmatic pattern adherence.",
+          "difficulty": "easy"
+        }
+      ]
+    },
+    {
+      "lessonId": "lld_11",
+      "lessonTitle": "Adapter Pattern",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What does the Adapter pattern accomplish?",
+          "options": [
+            "It converts the interface of a class into another interface clients expect.",
+            "It creates objects in a separate thread.",
+            "It guarantees only one instance of an object exists.",
+            "It compresses data before saving to disk."
+          ],
+          "correct": "A",
+          "explanation": "Adapter lets classes with incompatible interfaces work together by providing a translation layer.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q2",
+          "question": "What is the difference between an Object Adapter and a Class Adapter?",
+          "options": [
+            "Object Adapter uses composition to wrap the adaptee; Class Adapter uses multiple inheritance.",
+            "Object Adapter is for C++; Class Adapter is for Python.",
+            "Class Adapter cannot use interfaces.",
+            "Object Adapter only works on primitive types."
+          ],
+          "correct": "A",
+          "explanation": "Object Adapter wraps an instance of the adaptee (composition), while Class Adapter inherits from both target and adaptee.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q3",
+          "question": "How does an Adapter differ from a Decorator?",
+          "options": [
+            "Adapter changes an interface to resolve incompatibility; Decorator enhances an existing interface without changing it.",
+            "Adapter adds new behavior; Decorator removes behavior.",
+            "Decorator is creational; Adapter is behavioral.",
+            "They are identical patterns with different names."
+          ],
+          "correct": "A",
+          "explanation": "Adapter focuses on bridging different interfaces, while Decorator focuses on dynamically augmenting behavior under the same interface.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q4",
+          "question": "A modern billing system expects a JSON payload, but a legacy vendor service accepts XML. What pattern solves this?",
+          "options": [
+            "Adapter pattern.",
+            "Singleton pattern.",
+            "Visitor pattern.",
+            "Memento pattern."
+          ],
+          "correct": "A",
+          "explanation": "An adapter converts the JSON input into the XML payload required by the legacy vendor service.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q5",
+          "question": "What is a two-way adapter?",
+          "options": [
+            "An adapter that implements the interfaces of both systems, allowing both to use each other interchangeably.",
+            "An adapter that runs on two threads simultaneously.",
+            "An adapter with two methods only.",
+            "An adapter that writes to two databases."
+          ],
+          "correct": "A",
+          "explanation": "A two-way adapter supports bidirectional interaction by implementing both interfaces.",
+          "difficulty": "hard"
+        }
+      ]
+    },
+    {
+      "lessonId": "lld_16",
+      "lessonTitle": "Observer Pattern",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the primary intent of the Observer pattern?",
+          "options": [
+            "Define a one-to-many dependency between objects so that when one object changes state, all dependents are notified automatically.",
+            "Observe CPU temperature and adjust fan speed.",
+            "Convert synchronous methods into asynchronous ones.",
+            "Serialize objects to JSON format."
+          ],
+          "correct": "A",
+          "explanation": "Observer provides a publish-subscribe mechanism where multiple observers react to state changes in a subject.",
+          "difficulty": "easy"
+        },
+        {
+          "id": "q2",
+          "question": "What is the \"dangling observer\" or \"lapsed listener\" memory leak problem?",
+          "options": [
+            "When observers fail to unregister from the subject, preventing the garbage collector from reclaiming them.",
+            "When an observer crashes the JVM during notification.",
+            "When a subject is deleted before observers.",
+            "When an observer has too many fields."
+          ],
+          "correct": "A",
+          "explanation": "The subject retains a strong reference to observers; if observers are not unregistered, they cannot be garbage collected.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q3",
+          "question": "What is the difference between push and pull models in the Observer pattern?",
+          "options": [
+            "In push, the subject sends detailed event data with update(); in pull, the subject only notifies and the observer queries for details.",
+            "Push uses HTTP POST; Pull uses HTTP GET.",
+            "Push is synchronous; Pull is multithreaded.",
+            "Pull is only used in Git."
+          ],
+          "correct": "A",
+          "explanation": "Push sends data directly in the callback; Pull notifies observers, allowing each observer to fetch only what it needs.",
+          "difficulty": "medium"
+        },
+        {
+          "id": "q4",
+          "question": "How does Observer differ from the Mediator pattern?",
+          "options": [
+            "Observer coordinates one-to-many notifications from a subject; Mediator encapsulates complex many-to-many interactions among colleagues.",
+            "Mediator is creational; Observer is structural.",
+            "Observer cannot be used with UI events.",
+            "They are interchangeable names for the same pattern."
+          ],
+          "correct": "A",
+          "explanation": "Observer broadcasts state changes in one direction; Mediator coordinates bidirectional communication between multiple components.",
+          "difficulty": "hard"
+        },
+        {
+          "id": "q5",
+          "question": "Which frontend paradigm is built entirely upon the Observer pattern?",
+          "options": [
+            "Reactive programming (RxJS, React state hooks, Vue reactivity).",
+            "CSS Grid and Flexbox.",
+            "HTML5 Canvas rendering.",
+            "WebAssembly compilation."
+          ],
+          "correct": "A",
+          "explanation": "Modern reactive UI frameworks use observables and state subscriptions to re-render components when data updates.",
+          "difficulty": "easy"
         }
       ]
     }
