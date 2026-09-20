@@ -24,6 +24,7 @@ const feedback_1 = __importDefault(require("./routes/feedback"));
 const knowledge_1 = __importDefault(require("./routes/knowledge"));
 const registry_1 = __importDefault(require("./routes/registry"));
 const user_1 = __importDefault(require("./routes/user"));
+const lld_1 = __importDefault(require("./routes/lld"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // Security headers (add EARLY)
@@ -46,6 +47,7 @@ app.use('/api/', rateLimiter_1.apiLimiter);
 app.use('/api/auth/login', rateLimiter_1.authLimiter);
 app.use('/api/auth/register', rateLimiter_1.authLimiter);
 app.use('/api/ai/', rateLimiter_1.aiLimiter);
+app.use('/api/lld/ai-review', rateLimiter_1.aiLimiter);
 // Body parser
 app.use(express_1.default.json());
 // Sanitize all inputs (requires body parser to have run first)
@@ -53,6 +55,7 @@ app.use(sanitize_1.sanitizeInput);
 // Mount routes under /api
 app.use('/api/auth', auth_1.default);
 app.use('/api/user', user_1.default);
+app.use('/api/lld', lld_1.default);
 app.use('/api/diagrams', diagrams_1.default);
 app.use('/api/scenarios', scenarios_1.default);
 app.use('/api/progress', progress_1.default);

@@ -21,6 +21,7 @@ import feedbackRoutes from './routes/feedback';
 import knowledgeRoutes from './routes/knowledge';
 import registryRoutes from './routes/registry';
 import userRoutes from './routes/user';
+import lldRoutes from './routes/lld';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -49,6 +50,7 @@ app.use('/api/', apiLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/ai/', aiLimiter);
+app.use('/api/lld/ai-review', aiLimiter);
 
 // Body parser
 app.use(express.json());
@@ -59,6 +61,7 @@ app.use(sanitizeInput);
 // Mount routes under /api
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/lld', lldRoutes);
 app.use('/api/diagrams', diagramRoutes);
 app.use('/api/scenarios', scenarioRoutes);
 app.use('/api/progress', progressRoutes);
