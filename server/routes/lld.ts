@@ -1,21 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import axios from 'axios';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { requirePlan, checkLimit } from '../middleware/planGuard';
+import { executionLimiter } from '../middleware/rateLimiter';
 import { callAI } from '../lib/ai';
+import { executeCode } from '../lib/codeExecutor';
 import { LLDProblem, LLDSubmission, LLDProgress } from '../models/lldSubmission';
 
 const router = Router();
-
-// Piston API Configuration
-const PISTON_API_URL = process.env.PISTON_API_URL || 'https://emkc.org/api/v2/piston/execute';
-
-const PISTON_LANGUAGE_MAP: Record<string, { language: string; version: string }> = {
-  python: { language: 'python', version: '3.10.0' },
-  javascript: { language: 'javascript', version: '18.15.0' },
-  java: { language: 'java', version: '15.0.2' },
-  cpp: { language: 'c++', version: '10.2.0' },
-};
 
 // ── 1. GET /api/lld/problems ────────────────────────────────────────────────
 // List problems with optional filtering by pattern, difficulty, and search term
@@ -86,8 +77,8 @@ router.post('/submissions', authMiddleware, requirePlan('free'), async (req: Aut
       return res.status(400).json({ error: 'problemId, language, and code are required' });
     }
 
-    const validLanguages = ['python', 'java', 'cpp', 'javascript'];
-    if (!validLanguages.includes(language)) {
+    const validLanguages = ['python', 'java', 'cpp', 'javascript', 'go', 'typescript'];
+    if (!validLanguages.includes(language.toLowerCase())) {
       return res.status(400).json({ error: `language must be one of: ${validLanguages.join(', ')}` });
     }
 
@@ -129,77 +120,39 @@ router.post('/submissions', authMiddleware, requirePlan('free'), async (req: Aut
 });
 
 // ── 4. POST /api/lld/execute ────────────────────────────────────────────────
-// Proxies code execution securely to Piston API (never executes on Express server)
-router.post('/execute', authMiddleware, requirePlan('free'), async (req: AuthRequest, res: Response, next: NextFunction) => {
+// Proxies code execution securely via codeExecutor to Piston sandbox API
+router.post('/execute', authMiddleware, requirePlan('free'), executionLimiter, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { language, code, stdin } = req.body;
+    const { language, version, code, stdin } = req.body;
 
     if (!language || typeof code !== 'string') {
       return res.status(400).json({ error: 'language and code are required' });
-    }
-
-    const pistonConfig = PISTON_LANGUAGE_MAP[language.toLowerCase()];
-    if (!pistonConfig) {
-      return res.status(400).json({
-        error: `Unsupported execution language: ${language}. Supported languages: ${Object.keys(PISTON_LANGUAGE_MAP).join(', ')}`,
-      });
     }
 
     if (!code.trim()) {
       return res.status(400).json({ error: 'Code cannot be empty' });
     }
 
-    // Proxy request to Piston sandboxed runner
-    const startTime = Date.now();
-    try {
-      const pistonResponse = await axios.post(
-        PISTON_API_URL,
-        {
-          language: pistonConfig.language,
-          version: pistonConfig.version,
-          files: [
-            {
-              name: language === 'java' ? 'Solution.java' : undefined,
-              content: code,
-            },
-          ],
-          stdin: typeof stdin === 'string' ? stdin : '',
-        },
-        {
-          timeout: 12000,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+    const result = await executeCode({
+      language,
+      version,
+      code,
+      stdin,
+    });
 
-      const runtimeMs = Date.now() - startTime;
-      const runResult = pistonResponse.data?.run || {};
-
-      return res.status(200).json({
-        stdout: runResult.stdout || '',
-        stderr: runResult.stderr || '',
-        exitCode: typeof runResult.code === 'number' ? runResult.code : 0,
-        output: runResult.output || '',
-        runtime: runtimeMs,
-      });
-    } catch (pistonError: any) {
-      const runtimeMs = Date.now() - startTime;
-      if (pistonError.code === 'ECONNABORTED' || pistonError.message?.includes('timeout')) {
-        return res.status(408).json({
-          error: 'Code execution timed out (limit: 12 seconds). Check for infinite loops or long-running operations.',
-          runtime: runtimeMs,
-        });
-      }
-
-      console.error('[LLD Execute] Piston API error:', pistonError.response?.data || pistonError.message);
-      return res.status(502).json({
-        error: 'Execution service temporarily unavailable. Please try again in a few moments.',
-        details: pistonError.response?.data?.message || pistonError.message,
-      });
-    }
+    return res.status(200).json({
+      stdout: result.stdout,
+      stderr: result.stderr,
+      exitCode: result.exitCode,
+      executionTimeMs: result.executionTimeMs,
+      runtime: result.executionTimeMs,
+      output: result.stdout || result.stderr,
+      truncated: result.truncated,
+    });
   } catch (error) {
     next(error);
   }

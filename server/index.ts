@@ -7,7 +7,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { connectToDatabase } from './lib/mongodb';
 import { errorHandler } from './middleware/errorHandler';
-import { apiLimiter, authLimiter, aiLimiter } from './middleware/rateLimiter';
+import { apiLimiter, authLimiter, aiLimiter, executionLimiter } from './middleware/rateLimiter';
 import { sanitizeInput } from './middleware/sanitize';
 import { devLogger } from './middleware/requestLogger';
 
@@ -51,6 +51,7 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/ai/', aiLimiter);
 app.use('/api/lld/ai-review', aiLimiter);
+app.use('/api/lld/execute', executionLimiter);
 
 // Body parser
 app.use(express.json());

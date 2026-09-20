@@ -48,6 +48,7 @@ app.use('/api/auth/login', rateLimiter_1.authLimiter);
 app.use('/api/auth/register', rateLimiter_1.authLimiter);
 app.use('/api/ai/', rateLimiter_1.aiLimiter);
 app.use('/api/lld/ai-review', rateLimiter_1.aiLimiter);
+app.use('/api/lld/execute', rateLimiter_1.executionLimiter);
 // Body parser
 app.use(express_1.default.json());
 // Sanitize all inputs (requires body parser to have run first)

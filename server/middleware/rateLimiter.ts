@@ -24,6 +24,16 @@ export const aiLimiter = rateLimit({
   // @ts-ignore
   validate: { keyGeneratorIpFallback: false },
 
-
   message: { error: 'AI request limit reached. Resets in 1 hour.' }
 })
+
+// Code Execution routes (limit 20 executions per minute per user)
+export const executionLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20,
+  keyGenerator: (req: any) => req.user?.userId || req.user?._id?.toString() || req.ip,
+  // @ts-ignore
+  validate: { keyGeneratorIpFallback: false },
+  message: { error: 'Execution rate limit reached (max 20 executions per minute). Please slow down.' }
+})
+
